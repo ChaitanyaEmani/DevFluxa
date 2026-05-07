@@ -1,22 +1,22 @@
-import { Download as DownloadIcon } from 'lucide-react'
+import { Download as DownloadIcon } from "lucide-react";
 
 interface DownloadProps {
-  content: string
-  filename: string
-  mimeType?: string
-  className?: string
+  content: string;
+  filename: string;
+  mimeType?: string;
+  className?: string;
 }
 
 export function Download({ 
   content, 
   filename, 
   mimeType = 'text/plain', 
-  className = '' 
+  className = "" 
 }: DownloadProps) {
   const handleDownload = () => {
     const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const a = document.createElement("a")
     a.href = url
     a.download = filename
     document.body.appendChild(a)
