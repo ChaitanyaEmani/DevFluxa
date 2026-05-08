@@ -1,7 +1,7 @@
 "use client"
 
 import { forwardRef, useRef, useEffect, useState } from "react";
-
+ 
 interface CodeEditorProps {
   value: string
   onChange: (value: string) => void
