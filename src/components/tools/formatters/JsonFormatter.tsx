@@ -5,6 +5,7 @@ import { CodeEditor } from "@/components/ui/CodeEditor";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Download } from "@/components/ui/Download";
 import { Button } from "@/components/ui/Button";
+import { Header } from "@/components/ui/Header";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +21,6 @@ interface JsonStats {
   numberCount: number;
   booleanCount: number;
   nullCount: number;
-  duplicateKeys: string[];
 }
 
 interface TreeNode {
@@ -36,24 +36,19 @@ interface TreeNode {
 
 function computeStats(obj: JsonValue, path = "", depth = 0, stats: JsonStats = {
   totalKeys: 0, maxDepth: 0, arrayCount: 0, objectCount: 0,
-  stringCount: 0, numberCount: 0, booleanCount: 0, nullCount: 0, duplicateKeys: []
-}, keysSeen: Map<string, number> = new Map()): JsonStats {
+  stringCount: 0, numberCount: 0, booleanCount: 0, nullCount: 0
+}): JsonStats {
   stats.maxDepth = Math.max(stats.maxDepth, depth);
 
   if (Array.isArray(obj)) {
     stats.arrayCount++;
-    obj.forEach((item, i) => computeStats(item, `${path}[${i}]`, depth + 1, stats, keysSeen));
+    obj.forEach((item, i) => computeStats(item, `${path}[${i}]`, depth + 1, stats));
   } else if (obj !== null && typeof obj === "object") {
     stats.objectCount++;
     const keys = Object.keys(obj as JsonObject);
     keys.forEach((key) => {
       stats.totalKeys++;
-      const count = (keysSeen.get(key) || 0) + 1;
-      keysSeen.set(key, count);
-      if (count === 2 && !stats.duplicateKeys.includes(key)) {
-        stats.duplicateKeys.push(key);
-      }
-      computeStats((obj as JsonObject)[key], `${path}.${key}`, depth + 1, stats, keysSeen);
+      computeStats((obj as JsonObject)[key], `${path}.${key}`, depth + 1, stats);
     });
   } else if (typeof obj === "string") stats.stringCount++;
   else if (typeof obj === "number") stats.numberCount++;
@@ -63,40 +58,19 @@ function computeStats(obj: JsonValue, path = "", depth = 0, stats: JsonStats = {
   return stats;
 }
 
-function findDuplicateKeysInRaw(jsonStr: string): Set<string> {
-  const duplicates = new Set<string>();
-  const stack: Set<string>[] = [];
-  const keyRegex = /"((?:[^"\\]|\\.)*)"\s*:/g;
-  let match;
-
-  // Simple heuristic: find all keys and track which appear more than once
-  const allKeys = new Map<string, number>();
-  while ((match = keyRegex.exec(jsonStr)) !== null) {
-    const key = match[1];
-    allKeys.set(key, (allKeys.get(key) || 0) + 1);
-  }
-  allKeys.forEach((count, key) => {
-    if (count > 1) duplicates.add(key);
-  });
-  return duplicates;
-}
-
 // ─── Syntax Highlighting ──────────────────────────────────────────────────────
 
-function SyntaxHighlightedJson({ json, duplicateKeys }: { json: string; duplicateKeys: Set<string> }) {
+function SyntaxHighlightedJson({ json }: { json: string }) {
   const highlighted = json
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(
       /("((?:[^"\\]|\\.)*)")\s*:/g,
-      (_, full, key) => {
-        const isDup = duplicateKeys.has(key);
-        return `<span class="${isDup ? "json-key-dup" : "json-key"}">${full}</span>:`;
-      }
+      (_, full) => `<span class="json-key">${full}</span>:`
     )
     .replace(
-      /:\s*("(?:[^"\\]|\\.)*")/g,
+      /:\s*("(?:[^"\\]|\\\\)*")/g,
       (_, val) => `: <span class="json-string">${val}</span>`
     )
     .replace(/:\s*(-?\d+\.?\d*(?:[eE][+-]?\d+)?)/g, `: <span class="json-number">$1</span>`)
@@ -114,19 +88,17 @@ function SyntaxHighlightedJson({ json, duplicateKeys }: { json: string; duplicat
 // ─── Tree View ────────────────────────────────────────────────────────────────
 
 function TreeNodeRow({
-  nodeKey, value, depth, isLast, duplicateKeys
+  nodeKey, value, depth, isLast
 }: {
   nodeKey: string | number;
   value: JsonValue;
   depth: number;
   isLast: boolean;
-  duplicateKeys: Set<string>;
 }) {
   const [collapsed, setCollapsed] = useState(depth >= 2);
   const isObj = value !== null && typeof value === "object";
   const isArr = Array.isArray(value);
   const entries = isObj ? (isArr ? (value as JsonValue[]) : Object.entries(value as JsonObject)) : null;
-  const isDup = typeof nodeKey === "string" && duplicateKeys.has(nodeKey);
 
   const typeColor = () => {
     if (isArr) return "text-blue-500";
@@ -159,8 +131,7 @@ function TreeNodeRow({
         ) : (
           <span className="w-3 flex-shrink-0" />
         )}
-        <span className={`font-medium ${isDup ? "text-red-500 underline decoration-dotted" : "text-foreground"}`}>
-          {isDup && <span className="text-red-400 mr-1 text-xs">⚠</span>}
+        <span className="font-medium text-foreground">
           {typeof nodeKey === "number" ? (
             <span className="text-muted-foreground">[{nodeKey}]</span>
           ) : nodeKey}
@@ -179,10 +150,10 @@ function TreeNodeRow({
         <div>
           {isArr
             ? (value as JsonValue[]).map((item, i) => (
-                <TreeNodeRow key={i} nodeKey={i} value={item} depth={depth + 1} isLast={i === (value as JsonValue[]).length - 1} duplicateKeys={duplicateKeys} />
+                <TreeNodeRow key={i} nodeKey={i} value={item} depth={depth + 1} isLast={i === (value as JsonValue[]).length - 1} />
               ))
             : Object.entries(value as JsonObject).map(([k, v], i, arr) => (
-                <TreeNodeRow key={k} nodeKey={k} value={v} depth={depth + 1} isLast={i === arr.length - 1} duplicateKeys={duplicateKeys} />
+                <TreeNodeRow key={k} nodeKey={k} value={v} depth={depth + 1} isLast={i === arr.length - 1} />
               ))}
         </div>
       )}
@@ -190,12 +161,12 @@ function TreeNodeRow({
   );
 }
 
-function TreeView({ data, duplicateKeys }: { data: JsonValue; duplicateKeys: Set<string> }) {
+function TreeView({ data }: { data: JsonValue }) {
   if (Array.isArray(data)) {
     return (
       <div className="font-mono text-sm">
         {(data as JsonValue[]).map((item, i) => (
-          <TreeNodeRow key={i} nodeKey={i} value={item} depth={0} isLast={i === (data as JsonValue[]).length - 1} duplicateKeys={duplicateKeys} />
+          <TreeNodeRow key={i} nodeKey={i} value={item} depth={0} isLast={i === (data as JsonValue[]).length - 1} />
         ))}
       </div>
     );
@@ -204,7 +175,7 @@ function TreeView({ data, duplicateKeys }: { data: JsonValue; duplicateKeys: Set
     return (
       <div className="font-mono text-sm">
         {Object.entries(data as JsonObject).map(([k, v], i, arr) => (
-          <TreeNodeRow key={k} nodeKey={k} value={v} depth={0} isLast={i === arr.length - 1} duplicateKeys={duplicateKeys} />
+          <TreeNodeRow key={k} nodeKey={k} value={v} depth={0} isLast={i === arr.length - 1} />
         ))}
       </div>
     );
@@ -237,20 +208,6 @@ function StatsPanel({ stats }: { stats: JsonStats }) {
           </div>
         ))}
       </div>
-      {stats.duplicateKeys.length > 0 && (
-        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-          <p className="text-red-600 dark:text-red-400 text-xs font-semibold mb-1">
-            ⚠ Duplicate Keys Detected ({stats.duplicateKeys.length})
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {stats.duplicateKeys.map((key) => (
-              <span key={key} className="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs rounded font-mono">
-                {key}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -454,7 +411,7 @@ function useHistory(initial: string) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-type ViewMode = "formatted" | "tree" | "highlighted";
+type ViewMode = "tree" | "highlighted";
 
 export function JsonFormatter() {
   const inputHistory = useHistory("");
@@ -464,8 +421,7 @@ export function JsonFormatter() {
   const [isValid, setIsValid] = useState(false);
   const [stats, setStats] = useState<JsonStats | null>(null);
   const [parsedData, setParsedData] = useState<JsonValue | null>(null);
-  const [duplicateKeys, setDuplicateKeys] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("formatted");
+  const [viewMode, setViewMode] = useState<ViewMode>("highlighted");
   const [showUrlModal, setShowUrlModal] = useState(false);
 
   // Sync input with history
@@ -511,14 +467,12 @@ export function JsonFormatter() {
       if (!raw.trim()) throw new Error("Please enter JSON content");
       const parsed = JSON.parse(raw);
       const formatted = JSON.stringify(parsed, null, indent);
-      const dups = findDuplicateKeysInRaw(raw);
       const s = computeStats(parsed);
       setOutput(formatted);
       setError("");
       setIsValid(true);
       setStats(s);
       setParsedData(parsed);
-      setDuplicateKeys(dups);
       return true;
     } catch (err: any) {
       setError(err.message || "Invalid JSON");
@@ -526,7 +480,6 @@ export function JsonFormatter() {
       setIsValid(false);
       setStats(null);
       setParsedData(null);
-      setDuplicateKeys(new Set());
       return false;
     }
   };
@@ -542,7 +495,6 @@ export function JsonFormatter() {
       setIsValid(true);
       setStats(computeStats(parsed));
       setParsedData(parsed);
-      setDuplicateKeys(findDuplicateKeysInRaw(input));
     } catch {
       setError("Invalid JSON format");
       setOutput("");
@@ -557,12 +509,9 @@ export function JsonFormatter() {
     setIsValid(false);
     setStats(null);
     setParsedData(null);
-    setDuplicateKeys(new Set());
   };
 
-
   const viewTabs: { id: ViewMode; label: string }[] = [
-    { id: "formatted", label: "Formatted" },
     { id: "highlighted", label: "Highlighted" },
     { id: "tree", label: "Tree View" },
   ];
@@ -593,13 +542,7 @@ export function JsonFormatter() {
 
       <div className="container py-8">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-4">JSON Formatter</h1>
-            <p className="text-muted-foreground">
-              Format, validate, minify, explore, and share JSON data — entirely in your browser.
-            </p>
-          </div>
+          <Header toolTitle="JSON Formatter" toolDescription="Format, validate, minify, explore, and share JSON data — entirely in your browser." />  
 
           {/* Top toolbar */}
           <div className="flex flex-wrap gap-2 mb-4">
@@ -664,7 +607,7 @@ export function JsonFormatter() {
 
               {/* Output panel */}
               <div className={`border border-input rounded-md bg-background overflow-hidden ${viewMode === "tree" ? "min-h-[24rem]" : ""}`}>
-                {viewMode === "formatted" && (
+                {/* {viewMode === "formatted" && (
                   <CodeEditor
                     value={output}
                     onChange={() => {}}
@@ -673,10 +616,10 @@ export function JsonFormatter() {
                     readOnly={true}
                     showLineNumbers={false}
                   />
-                )}
+                )} */}
                 {viewMode === "highlighted" && output && (
                   <div className="min-h-[24rem] max-h-[32rem] overflow-auto">
-                    <SyntaxHighlightedJson json={output} duplicateKeys={duplicateKeys} />
+                    <SyntaxHighlightedJson json={output} />
                   </div>
                 )}
                 {viewMode === "highlighted" && !output && (
@@ -686,7 +629,7 @@ export function JsonFormatter() {
                 )}
                 {viewMode === "tree" && parsedData !== null && (
                   <div className="min-h-[24rem] max-h-[32rem] overflow-auto py-2">
-                    <TreeView data={parsedData} duplicateKeys={duplicateKeys} />
+                    <TreeView data={parsedData} />
                   </div>
                 )}
                 {viewMode === "tree" && parsedData === null && (

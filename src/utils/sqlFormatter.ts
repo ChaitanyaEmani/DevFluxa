@@ -329,7 +329,7 @@ export function formatSql(sql: string, options: FormattingOptions): string {
         }
       }
     } else {
-      if (needsIndent && token.type !== 'whitespace') {
+      if (needsIndent) {
         formatted += '\n' + indentChar.repeat(indentLevel)
         needsIndent = false
       }
