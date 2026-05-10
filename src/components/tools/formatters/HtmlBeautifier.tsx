@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { CodeEditor } from '@/components/ui/CodeEditor'
+import { SyntaxHighlighter } from '@/components/ui/SyntaxHighlighter'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Download } from '@/components/ui/Download'
 import { Button } from '@/components/ui/Button'
@@ -9,6 +10,7 @@ import { Select } from '@/components/ui/Select'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { DiffViewer } from '@/components/ui/DiffViewer'
+import { Header } from '@/components/ui/Header'
 
 interface FormattingOptions {
   indentType: 'spaces' | 'tabs'
@@ -40,11 +42,11 @@ export function HtmlBeautifier() {
   const [output, setOutput] = useState('')
   const [errors, setErrors] = useState<ValidationError[]>([])
   const [activeTab, setActiveTab] = useState('format')
-  const [isMinifyMode, setIsMinifyMode] = useState(false)
   const [urlInput, setUrlInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showUrlModal, setShowUrlModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [options, setOptions] = useState<FormattingOptions>({
     indentType: 'spaces',
     indentSize: 2,
@@ -153,7 +155,7 @@ export function HtmlBeautifier() {
     return validationErrors
   }
 
-  const formatHTML = (html: string, minify: boolean = false): string => {
+  const formatHTML = (html: string): string => {
     if (!html.trim()) return ''
 
     let processed = html
@@ -173,16 +175,6 @@ export function HtmlBeautifier() {
       processed = processed.replace(/<!--[\s\S]*?-->/g, '')
     }
 
-    if (minify) {
-      // Minify mode
-      return doctype + processed
-        .replace(/>\s+</g, '><')
-        .replace(/\s+/g, ' ')
-        .replace(/^\s+|\s+$/g, '')
-        .trim()
-    }
-
-    // Beautify mode
     const indentChar = options.indentType === 'tabs' ? '\t' : ' '.repeat(options.indentSize)
     
     // Convert tag case
@@ -264,7 +256,7 @@ export function HtmlBeautifier() {
         return
       }
 
-      const formatted = formatHTML(input, isMinifyMode)
+      const formatted = formatHTML(input)
       setOutput(formatted)
     } catch (err) {
       setErrors([{
@@ -328,12 +320,25 @@ export function HtmlBeautifier() {
   return (
     <div className="container py-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">HTML Beautifier & Formatter</h1>
-          <p className="text-muted-foreground">
-            Advanced HTML formatting with customizable options, validation, and multiple export formats.
-          </p>
-        </div>
+        <Header 
+          toolTitle="HTML Beautifier & Formatter"
+          toolDescription="Advanced HTML formatting with customizable options, validation, and multiple export formats."
+        />
+
+        <div className="flex flex-wrap gap-4 mb-6">
+            <Button onClick={processHTML} disabled={isProcessing || !input.trim()}>
+              Beautify HTML
+            </Button>
+            <Button variant="outline" onClick={() => setShowUrlModal(true)}>
+              Load URL
+            </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              Upload File
+            </Button>
+            <Button variant="outline" size="sm" onClick={clearAll}>
+              Clear
+            </Button>
+          </div>
 
         <Tabs defaultValue="format" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
@@ -346,9 +351,6 @@ export function HtmlBeautifier() {
             <TabsTrigger value="compare" isActive={activeTab === 'compare'} onClick={() => setActiveTab('compare')}>
               Compare
             </TabsTrigger>
-            <TabsTrigger value="import" isActive={activeTab === 'import'} onClick={() => setActiveTab('import')}>
-              Import
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="format" isActive={activeTab === 'format'}>
@@ -356,25 +358,30 @@ export function HtmlBeautifier() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold">Input HTML</h2>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={clearAll}>
-                      Clear
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                      Upload File
-                    </Button>
+                  <div className="text-sm text-muted-foreground">
+                    {getInputStats().characters} chars, {getInputStats().words} words, {getInputStats().lines} lines
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground mb-2">
-                  {getInputStats().characters} chars, {getInputStats().words} words, {getInputStats().lines} lines
-                </div>
-                <CodeEditor
+                <SyntaxHighlighter
                   value={input}
+                  language="markup"
+                  editable={true}
                   onChange={setInput}
                   placeholder="Paste your HTML code here..."
                   rows={15}
                   showLineNumbers={true}
+                  readOnly={false}
+                  className="h-[400px]"
                 />
+                {/* <CodeEditor
+                    value={input}
+                    onChange={setInput}
+                    placeholder="Paste your HTML code here..."
+                    className="h-full"
+                    showLineNumbers={true}
+                    errorLine={null}
+                  /> */}
+                
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -386,49 +393,39 @@ export function HtmlBeautifier() {
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">
-                    {isMinifyMode ? 'Minified' : 'Beautified'} Output
-                  </h2>
-                  {output && (
-                    <div className="flex gap-2">
-                      <CopyButton text={output} />
-                      <Button variant="outline" size="sm" onClick={() => downloadFile(output, isMinifyMode ? 'minified.html' : 'beautified.html', 'text/html')}>
-                        Download HTML
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => downloadFile(output, 'formatted.txt', 'text/plain')}>
-                        Download TXT
-                      </Button>
-                    </div>
-                  )}
+                  <h2 className="text-xl font-semibold">Beautified Output</h2>
+                  <div className="flex gap-2">
+                    {output && (
+                      <>
+                        <CopyButton text={output} />
+                        <Button variant="outline" size="sm" onClick={() => downloadFile(output, 'beautified.html', 'text/html')}>
+                          Download HTML
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => downloadFile(output, 'formatted.txt', 'text/plain')}>
+                          Download TXT
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="text-sm text-muted-foreground mb-2">
                   {getOutputStats().characters} chars, {getOutputStats().words} words, {getOutputStats().lines} lines
                 </div>
-                <CodeEditor
+                <SyntaxHighlighter
                   value={output}
-                  onChange={() => {}}
-                  placeholder={`${isMinifyMode ? 'Minified' : 'Beautified'} HTML will appear here...`}
+                  language="markup"
+                  editable={false}
+                  placeholder="Beautified HTML will appear here..."
                   rows={15}
                   showLineNumbers={true}
                   readOnly={true}
+                  className="h-[400px]"
                 />
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4">
-              <Button onClick={processHTML} disabled={isProcessing || !input.trim()}>
-                {isMinifyMode ? 'Minify HTML' : 'Beautify HTML'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsMinifyMode(!isMinifyMode)}
-              >
-                Switch to {isMinifyMode ? 'Beautify' : 'Minify'} Mode
-              </Button>
-            </div>
-
             {errors.length > 0 && (
-              <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <h3 className="text-destructive font-semibold mb-2">Validation Errors:</h3>
                 {errors.map((error, index) => (
                   <div key={index} className="text-destructive text-sm">
@@ -460,7 +457,7 @@ export function HtmlBeautifier() {
                   <label className="block text-sm font-medium mb-2">Indent Size</label>
                   <Select
                     value={options.indentSize.toString()}
-                    onChange={(e) => setOptions({...options, indentSize: parseInt(e.target.value) as 2 | 4 | 8})}
+                    onChange={(e) => setOptions({...options, indentSize: parseInt(e.target.value) as 2 | 4 | 8})} // Changed from 4 to 8
                     options={[
                       { value: '2', label: '2 spaces' },
                       { value: '4', label: '4 spaces' },
@@ -575,48 +572,47 @@ export function HtmlBeautifier() {
               )}
             </div>
           </TabsContent>
+        </Tabs>
 
-          <TabsContent value="import" isActive={activeTab === 'import'}>
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-lg mb-4">Upload HTML File</h3>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                  <input
-                    type="file"
-                    accept=".html,.htm"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <div className="text-muted-foreground">
-                      Click to upload HTML file or drag and drop
-                    </div>
-                    <Button variant="outline" className="mt-4">
-                      Choose File
-                    </Button>
-                  </label>
-                </div>
-              </div>
+        
 
-              <div>
-                <h3 className="font-semibold text-lg mb-4">Fetch from URL</h3>
-                <div className="flex gap-2">
+        {/* URL Modal */}
+        {showUrlModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Load HTML from URL</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">URL</label>
                   <input
                     type="url"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
                     placeholder="https://example.com/page.html"
-                    className="flex-1 px-3 py-2 border rounded-md"
+                    className="w-full px-3 py-2 border rounded-md"
                   />
-                  <Button onClick={fetchFromURL} disabled={!urlInput.trim() || isProcessing}>
-                    Fetch
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => {
+                    setShowUrlModal(false)
+                    setUrlInput('')
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      fetchFromURL()
+                      setShowUrlModal(false)
+                    }} 
+                    disabled={!urlInput.trim() || isProcessing}
+                  >
+                    {isProcessing ? 'Loading...' : 'Load'}
                   </Button>
                 </div>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   )
