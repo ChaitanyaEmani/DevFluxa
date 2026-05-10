@@ -92,7 +92,6 @@ export default function AboutPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• Base64 Encode/Decode</li>
                 <li>• Timestamp Converter</li>
-                <li>• YAML to JSON</li>
                 <li>• RGB to HEX Converter</li>
                 <li>• URL Encoder/Decoder</li>
               </ul>

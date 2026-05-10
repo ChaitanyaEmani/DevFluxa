@@ -20,22 +20,10 @@ const tools = [
         features: ['Syntax Validation', 'Error Detection', 'Pretty Print', 'Minify Option']
       },
       {
-        name: 'SQL Formatter',
-        description: 'Format SQL queries with proper indentation and keyword highlighting',
-        href: '/formatters/sql-formatter',
-        features: ['Keyword Formatting', 'Parentheses Validation', 'Query Structure', 'Error Reporting']
-      },
-      {
         name: 'HTML Beautifier',
         description: 'Format HTML code with proper indentation and structure',
         href: '/formatters/html-beautifier',
         features: ['Tag Validation', 'Proper Nesting', 'Comment Handling', 'Structure Preservation']
-      },
-      {
-        name: 'XML Formatter',
-        description: 'Format XML files with proper indentation and validation',
-        href: '/formatters/xml-formatter',
-        features: ['Tag Balance', 'CDATA Support', 'Comment Handling', 'Structure Validation']
       },
       {
         name: 'CSS Formatter',
@@ -73,12 +61,6 @@ const tools = [
         description: 'Encode and decode URLs for safe transmission',
         href: '/converters/url-encoder',
         features: ['Special Characters', 'Safe Transmission', 'Bidirectional', 'Format Validation']
-      },
-      {
-        name: 'YAML to JSON',
-        description: 'Convert YAML configuration files to JSON format',
-        href: '/converters/yaml-to-json',
-        features: ['Syntax Validation', 'Type Detection', 'Pretty JSON', 'Error Reporting']
       }
     ]
   }

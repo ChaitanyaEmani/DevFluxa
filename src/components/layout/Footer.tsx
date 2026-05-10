@@ -45,7 +45,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/converters/base64-encode-decode" className="text-muted-foreground hover:text-foreground transition-colors">Base64 Encode/Decode</Link></li>
               <li><Link href="/converters/timestamp-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timestamp Converter</Link></li>
-              <li><Link href="/converters/yaml-to-json" className="text-muted-foreground hover:text-foreground transition-colors">YAML to JSON</Link></li>
               <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
               <li><Link href="/converters/url-encoder" className="text-muted-foreground hover:text-foreground transition-colors">URL Encoder</Link></li>
             </ul>

@@ -11,9 +11,7 @@ interface ToolPageProps {
 export async function generateStaticParams() {
   return [
     { toolSlug: 'json-formatter' },
-    { toolSlug: 'sql-formatter' },
     { toolSlug: 'html-beautifier' },
-    { toolSlug: 'xml-formatter' },
     { toolSlug: 'css-formatter' }
   ]
 }
@@ -51,14 +49,8 @@ export default async function ToolPage({ params }: ToolPageProps) {
       case 'json-formatter':
         ToolComponent = (await import('@/components/tools/formatters/JsonFormatter')).JsonFormatter
         break
-      case 'sql-formatter':
-        ToolComponent = (await import('@/components/tools/formatters/SqlFormatter')).SqlFormatter
-        break
       case 'html-beautifier':
         ToolComponent = (await import('@/components/tools/formatters/HtmlBeautifier')).HtmlBeautifier
-        break
-      case 'xml-formatter':
-        ToolComponent = (await import('@/components/tools/formatters/XmlFormatter')).XmlFormatter
         break
       case 'css-formatter':
         ToolComponent = (await import('@/components/tools/formatters/CssFormatter')).CssFormatter

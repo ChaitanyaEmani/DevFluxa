@@ -563,25 +563,14 @@ export function JsonFormatter() {
           </div>
 
           {/* Editor grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6">
             {/* Input */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
+            <div className="flex justify-between">
+              <div className="flex items-center gap-4">
                 <h2 className="text-xl font-semibold">Input JSON</h2>
                 <span className="text-xs text-muted-foreground">Ctrl+Z / Ctrl+Y to undo/redo</span>
               </div>
-              <CodeEditor
-                value={input}
-                onChange={setInput}
-                placeholder="Paste your JSON here..."
-                rows={16}
-                showLineNumbers={true}
-              />
-            </div>
-
-            {/* Output */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
                 <div className="flex gap-1 border rounded-md p-0.5 bg-muted/30">
                   {viewTabs.map((tab) => (
                     <button
@@ -604,36 +593,38 @@ export function JsonFormatter() {
                   </div>
                 )}
               </div>
+            </div>
 
+            {/* Output */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-96 border border-input rounded-md overflow-hidden">
+                <CodeEditor
+                  value={input}
+                  onChange={setInput}
+                  placeholder="Paste your JSON here..."
+                  className="h-full"
+                  showLineNumbers={true}
+                />
+              </div>
               {/* Output panel */}
-              <div className={`border border-input rounded-md bg-background overflow-hidden ${viewMode === "tree" ? "min-h-[24rem]" : ""}`}>
-                {/* {viewMode === "formatted" && (
-                  <CodeEditor
-                    value={output}
-                    onChange={() => {}}
-                    placeholder="Formatted JSON will appear here..."
-                    rows={16}
-                    readOnly={true}
-                    showLineNumbers={false}
-                  />
-                )} */}
+              <div className={`h-96 border border-input rounded-md bg-background overflow-hidden`}>
                 {viewMode === "highlighted" && output && (
-                  <div className="min-h-[24rem] max-h-[32rem] overflow-auto">
+                  <div className="h-full overflow-auto">
                     <SyntaxHighlightedJson json={output} />
                   </div>
                 )}
                 {viewMode === "highlighted" && !output && (
-                  <div className="p-4 text-muted-foreground text-sm font-mono min-h-[24rem] flex items-center justify-center">
+                  <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
                     Format JSON first to see syntax highlighting
                   </div>
                 )}
                 {viewMode === "tree" && parsedData !== null && (
-                  <div className="min-h-[24rem] max-h-[32rem] overflow-auto py-2">
+                  <div className="h-full overflow-auto py-2">
                     <TreeView data={parsedData} />
                   </div>
                 )}
                 {viewMode === "tree" && parsedData === null && (
-                  <div className="p-4 text-muted-foreground text-sm font-mono min-h-[24rem] flex items-center justify-center">
+                  <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
                     Format JSON first to see tree view
                   </div>
                 )}
@@ -653,12 +644,6 @@ export function JsonFormatter() {
             </div>
           )}
 
-          {/* Success */}
-          {isValid && !error && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 rounded-lg">
-              <p className="text-green-700 dark:text-green-300 text-sm">✓ Valid JSON format</p>
-            </div>
-          )}
 
           {/* Stats */}
           {stats && <StatsPanel stats={stats} />}
