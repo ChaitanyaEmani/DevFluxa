@@ -25,11 +25,6 @@ interface FormattingOptions {
   preserveDoctype: boolean
 }
 
-interface ValidationError {
-  line: number
-  column: number
-  message: string
-}
 
 interface TextStats {
   characters: number
@@ -40,7 +35,6 @@ interface TextStats {
 export function HtmlBeautifier() {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
-  const [errors, setErrors] = useState<ValidationError[]>([])
   const [activeTab, setActiveTab] = useState('format')
   const [urlInput, setUrlInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -72,88 +66,6 @@ export function HtmlBeautifier() {
     lines: output.split('\n').length
   })
 
-  const validateHTML = (html: string): ValidationError[] => {
-    const validationErrors: ValidationError[] = []
-    let tagCount = 0
-    let inString = false
-    let escapeNext = false
-    let inComment = false
-    let lineNum = 1
-    let colNum = 1
-
-    for (let i = 0; i < html.length; i++) {
-      const char = html[i]
-      
-      if (char === '\n') {
-        lineNum++
-        colNum = 1
-      } else {
-        colNum++
-      }
-      
-      if (escapeNext) {
-        escapeNext = false
-        continue
-      }
-      
-      if (char === '\\') {
-        escapeNext = true
-        continue
-      }
-      
-      if (!inComment && (char === '"' || char === "'") && !escapeNext) {
-        inString = !inString
-        continue
-      }
-      
-      if (inString || inComment) continue
-      
-      if (char === '<' && html.substring(i, i + 4) !== '<!--') {
-        tagCount++
-      } else if (char === '>') {
-        tagCount--
-        if (tagCount < 0) {
-          validationErrors.push({
-            line: lineNum,
-            column: colNum,
-            message: `Unexpected closing tag`
-          })
-        }
-      }
-      
-      if (html.substring(i, i + 4) === '<!--') {
-        inComment = true
-      } else if (html.substring(i - 3, i) === '-->') {
-        inComment = false
-      }
-    }
-
-    if (tagCount !== 0) {
-      validationErrors.push({
-        line: lineNum,
-        column: colNum,
-        message: `Unclosed tags: ${tagCount > 0 ? tagCount + ' opening tags' : Math.abs(tagCount) + ' closing tags'} missing`
-      })
-    }
-
-    if (inString) {
-      validationErrors.push({
-        line: lineNum,
-        column: colNum,
-        message: 'Unclosed string literal'
-      })
-    }
-
-    if (inComment) {
-      validationErrors.push({
-        line: lineNum,
-        column: colNum,
-        message: 'Unclosed HTML comment'
-      })
-    }
-
-    return validationErrors
-  }
 
   const formatHTML = (html: string): string => {
     if (!html.trim()) return ''
@@ -204,28 +116,58 @@ export function HtmlBeautifier() {
       })
     }
 
-    // Basic formatting
-    let formatted = processed
-      .replace(/></g, '>\n<')
-      .replace(/(\s+)></g, '>')
-      .replace(/^\s+|\s+$/gm, '')
-      .split('\n')
-      .map((line) => {
-        const trimmed = line.trim()
-        if (trimmed === '') return ''
+    // Basic formatting - proper HTML structure approach
+    const tokens = processed.match(/<[^>]+>|[^<]+/g) || []
+    const lines: string[] = []
+    let currentLine = ''
+    let indentLevel = 0
+    
+    for (const token of tokens) {
+      const trimmedToken = token.trim()
+      if (!trimmedToken) continue
+      
+      // Check if it's a tag
+      if (trimmedToken.startsWith('<')) {
+        const isClosingTag = trimmedToken.startsWith('</')
+        const isSelfClosing = trimmedToken.endsWith('/>') || isSelfClosingTag(trimmedToken)
+        const tagName = trimmedToken.replace(/<\/?([^\s>]+).*/, '$1').toLowerCase()
         
-        let indentLevel = 0
+        // Block level tags that should be on their own line
+        const blockTags = ['html', 'head', 'body', 'div', 'section', 'article', 'aside', 'nav', 'main', 'header', 'footer', 'form', 'fieldset', 'legend', 'table', 'tbody', 'thead', 'tfoot', 'tr', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'blockquote', 'pre', 'address', 'figure', 'figcaption', 'iframe', 'video', 'audio', 'canvas', 'svg', 'script', 'style', 'title', 'meta', 'link']
         
-        // Calculate indentation
-        if (trimmed.startsWith('</')) {
-          indentLevel = Math.max(0, getCurrentIndentLevel(processed, processed.indexOf(line)) - 1)
+        if (blockTags.includes(tagName)) {
+          // Finish current line if it has content
+          if (currentLine.trim()) {
+            lines.push(indentChar.repeat(indentLevel) + currentLine.trim())
+            currentLine = ''
+          }
+          
+          // Handle closing tags
+          if (isClosingTag) {
+            indentLevel = Math.max(0, indentLevel - 1)
+            lines.push(indentChar.repeat(indentLevel) + trimmedToken)
+          } else {
+            lines.push(indentChar.repeat(indentLevel) + trimmedToken)
+            if (!isSelfClosing) {
+              indentLevel++
+            }
+          }
         } else {
-          indentLevel = getCurrentIndentLevel(processed, processed.indexOf(line))
+          // Inline elements - add to current line
+          currentLine += trimmedToken
         }
-        
-        return indentChar.repeat(Math.max(0, indentLevel)) + trimmed
-      })
-      .join('\n')
+      } else {
+        // Text content
+        currentLine += trimmedToken
+      }
+    }
+    
+    // Add any remaining content
+    if (currentLine.trim()) {
+      lines.push(indentChar.repeat(indentLevel) + currentLine.trim())
+    }
+    
+    let formatted = lines.join('\n')
 
     // Line wrapping
     if (options.wrapLines && options.wrapColumn > 0) {
@@ -238,33 +180,19 @@ export function HtmlBeautifier() {
     return doctype + formatted
   }
 
-  const getCurrentIndentLevel = (text: string, position: number): number => {
-    const before = text.substring(0, position)
-    const openTags = before.match(/<[^\/][^>]*[^\/]>/g) || []
-    const closeTags = before.match(/<\/[^>]+>/g) || []
-    return Math.max(0, openTags.length - closeTags.length)
+  const isSelfClosingTag = (tag: string): boolean => {
+    const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']
+    const tagName = tag.replace(/<\/?([^\s>]+).*/, '$1').toLowerCase()
+    return selfClosingTags.includes(tagName) || tag.endsWith('/>')
   }
 
   const processHTML = () => {
     try {
       setIsProcessing(true)
-      const validationErrors = validateHTML(input)
-      setErrors(validationErrors)
-      
-      if (validationErrors.length > 0) {
-        setOutput('')
-        return
-      }
-
       const formatted = formatHTML(input)
       setOutput(formatted)
     } catch (err) {
-      setErrors([{
-        line: 1,
-        column: 1,
-        message: err instanceof Error ? err.message : 'Error processing HTML'
-      }])
-      setOutput('')
+      console.error('Error processing HTML:', err)
     } finally {
       setIsProcessing(false)
     }
@@ -291,11 +219,7 @@ export function HtmlBeautifier() {
       setInput(html)
       setUrlInput('')
     } catch (err) {
-      setErrors([{
-        line: 1,
-        column: 1,
-        message: 'Failed to fetch HTML from URL'
-      }])
+      console.error('Failed to fetch URL:', err)
     } finally {
       setIsProcessing(false)
     }
@@ -304,7 +228,6 @@ export function HtmlBeautifier() {
   const clearAll = () => {
     setInput('')
     setOutput('')
-    setErrors([])
   }
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -424,16 +347,6 @@ export function HtmlBeautifier() {
               </div>
             </div>
 
-            {errors.length > 0 && (
-              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <h3 className="text-destructive font-semibold mb-2">Validation Errors:</h3>
-                {errors.map((error, index) => (
-                  <div key={index} className="text-destructive text-sm">
-                    Line {error.line}, Column {error.column}: {error.message}
-                  </div>
-                ))}
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="options" isActive={activeTab === 'options'}>
