@@ -608,22 +608,32 @@ export function JsonFormatter() {
               </div>
               {/* Output panel */}
               <div className={`h-96 border border-input rounded-md bg-background overflow-hidden`}>
-                {viewMode === "highlighted" && output && (
+                {error && (
+                  <div className="h-full p-4 text-destructive text-sm font-mono overflow-auto">
+                    <div className="flex flex-col gap-2">
+                      <strong>JSON Validation Error:</strong> {error}
+                      <div className="text-xs">
+                        Please check your JSON syntax. Common issues: missing commas, unclosed brackets, or trailing commas.
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {viewMode === "highlighted" && !error && output && (
                   <div className="h-full overflow-auto">
                     <SyntaxHighlightedJson json={output} />
                   </div>
                 )}
-                {viewMode === "highlighted" && !output && (
+                {viewMode === "highlighted" && !error && !output && (
                   <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
                     Format JSON first to see syntax highlighting
                   </div>
                 )}
-                {viewMode === "tree" && parsedData !== null && (
+                {viewMode === "tree" && !error && parsedData !== null && (
                   <div className="h-full overflow-auto py-2">
                     <TreeView data={parsedData} />
                   </div>
                 )}
-                {viewMode === "tree" && parsedData === null && (
+                {viewMode === "tree" && !error && parsedData === null && (
                   <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
                     Format JSON first to see tree view
                   </div>
@@ -631,19 +641,6 @@ export function JsonFormatter() {
               </div>
             </div>
           </div>
-
-          {/* Error */}
-          {error && (
-            <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-destructive text-sm">
-                <strong>JSON Validation Error:</strong> {error}
-              </p>
-              <p className="text-destructive text-xs mt-2">
-                Please check your JSON syntax. Common issues: missing commas, unclosed brackets, or trailing commas.
-              </p>
-            </div>
-          )}
-
 
           {/* Stats */}
           {stats && <StatsPanel stats={stats} />}
