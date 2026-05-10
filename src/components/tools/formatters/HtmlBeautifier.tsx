@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { CodeEditor } from '@/components/ui/CodeEditor'
+import { SyntaxHighlighter } from '@/components/ui/SyntaxHighlighter'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Download } from '@/components/ui/Download'
 import { Button } from '@/components/ui/Button'
@@ -9,6 +10,7 @@ import { Select } from '@/components/ui/Select'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { DiffViewer } from '@/components/ui/DiffViewer'
+import { Header } from '@/components/ui/Header'
 
 interface FormattingOptions {
   indentType: 'spaces' | 'tabs'
@@ -23,11 +25,6 @@ interface FormattingOptions {
   preserveDoctype: boolean
 }
 
-interface ValidationError {
-  line: number
-  column: number
-  message: string
-}
 
 interface TextStats {
   characters: number
@@ -38,13 +35,12 @@ interface TextStats {
 export function HtmlBeautifier() {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
-  const [errors, setErrors] = useState<ValidationError[]>([])
   const [activeTab, setActiveTab] = useState('format')
-  const [isMinifyMode, setIsMinifyMode] = useState(false)
   const [urlInput, setUrlInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showUrlModal, setShowUrlModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [options, setOptions] = useState<FormattingOptions>({
     indentType: 'spaces',
     indentSize: 2,
@@ -70,90 +66,8 @@ export function HtmlBeautifier() {
     lines: output.split('\n').length
   })
 
-  const validateHTML = (html: string): ValidationError[] => {
-    const validationErrors: ValidationError[] = []
-    let tagCount = 0
-    let inString = false
-    let escapeNext = false
-    let inComment = false
-    let lineNum = 1
-    let colNum = 1
 
-    for (let i = 0; i < html.length; i++) {
-      const char = html[i]
-      
-      if (char === '\n') {
-        lineNum++
-        colNum = 1
-      } else {
-        colNum++
-      }
-      
-      if (escapeNext) {
-        escapeNext = false
-        continue
-      }
-      
-      if (char === '\\') {
-        escapeNext = true
-        continue
-      }
-      
-      if (!inComment && (char === '"' || char === "'") && !escapeNext) {
-        inString = !inString
-        continue
-      }
-      
-      if (inString || inComment) continue
-      
-      if (char === '<' && html.substring(i, i + 4) !== '<!--') {
-        tagCount++
-      } else if (char === '>') {
-        tagCount--
-        if (tagCount < 0) {
-          validationErrors.push({
-            line: lineNum,
-            column: colNum,
-            message: `Unexpected closing tag`
-          })
-        }
-      }
-      
-      if (html.substring(i, i + 4) === '<!--') {
-        inComment = true
-      } else if (html.substring(i - 3, i) === '-->') {
-        inComment = false
-      }
-    }
-
-    if (tagCount !== 0) {
-      validationErrors.push({
-        line: lineNum,
-        column: colNum,
-        message: `Unclosed tags: ${tagCount > 0 ? tagCount + ' opening tags' : Math.abs(tagCount) + ' closing tags'} missing`
-      })
-    }
-
-    if (inString) {
-      validationErrors.push({
-        line: lineNum,
-        column: colNum,
-        message: 'Unclosed string literal'
-      })
-    }
-
-    if (inComment) {
-      validationErrors.push({
-        line: lineNum,
-        column: colNum,
-        message: 'Unclosed HTML comment'
-      })
-    }
-
-    return validationErrors
-  }
-
-  const formatHTML = (html: string, minify: boolean = false): string => {
+  const formatHTML = (html: string): string => {
     if (!html.trim()) return ''
 
     let processed = html
@@ -173,16 +87,6 @@ export function HtmlBeautifier() {
       processed = processed.replace(/<!--[\s\S]*?-->/g, '')
     }
 
-    if (minify) {
-      // Minify mode
-      return doctype + processed
-        .replace(/>\s+</g, '><')
-        .replace(/\s+/g, ' ')
-        .replace(/^\s+|\s+$/g, '')
-        .trim()
-    }
-
-    // Beautify mode
     const indentChar = options.indentType === 'tabs' ? '\t' : ' '.repeat(options.indentSize)
     
     // Convert tag case
@@ -212,28 +116,58 @@ export function HtmlBeautifier() {
       })
     }
 
-    // Basic formatting
-    let formatted = processed
-      .replace(/></g, '>\n<')
-      .replace(/(\s+)></g, '>')
-      .replace(/^\s+|\s+$/gm, '')
-      .split('\n')
-      .map((line) => {
-        const trimmed = line.trim()
-        if (trimmed === '') return ''
+    // Basic formatting - proper HTML structure approach
+    const tokens = processed.match(/<[^>]+>|[^<]+/g) || []
+    const lines: string[] = []
+    let currentLine = ''
+    let indentLevel = 0
+    
+    for (const token of tokens) {
+      const trimmedToken = token.trim()
+      if (!trimmedToken) continue
+      
+      // Check if it's a tag
+      if (trimmedToken.startsWith('<')) {
+        const isClosingTag = trimmedToken.startsWith('</')
+        const isSelfClosing = trimmedToken.endsWith('/>') || isSelfClosingTag(trimmedToken)
+        const tagName = trimmedToken.replace(/<\/?([^\s>]+).*/, '$1').toLowerCase()
         
-        let indentLevel = 0
+        // Block level tags that should be on their own line
+        const blockTags = ['html', 'head', 'body', 'div', 'section', 'article', 'aside', 'nav', 'main', 'header', 'footer', 'form', 'fieldset', 'legend', 'table', 'tbody', 'thead', 'tfoot', 'tr', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'blockquote', 'pre', 'address', 'figure', 'figcaption', 'iframe', 'video', 'audio', 'canvas', 'svg', 'script', 'style', 'title', 'meta', 'link']
         
-        // Calculate indentation
-        if (trimmed.startsWith('</')) {
-          indentLevel = Math.max(0, getCurrentIndentLevel(processed, processed.indexOf(line)) - 1)
+        if (blockTags.includes(tagName)) {
+          // Finish current line if it has content
+          if (currentLine.trim()) {
+            lines.push(indentChar.repeat(indentLevel) + currentLine.trim())
+            currentLine = ''
+          }
+          
+          // Handle closing tags
+          if (isClosingTag) {
+            indentLevel = Math.max(0, indentLevel - 1)
+            lines.push(indentChar.repeat(indentLevel) + trimmedToken)
+          } else {
+            lines.push(indentChar.repeat(indentLevel) + trimmedToken)
+            if (!isSelfClosing) {
+              indentLevel++
+            }
+          }
         } else {
-          indentLevel = getCurrentIndentLevel(processed, processed.indexOf(line))
+          // Inline elements - add to current line
+          currentLine += trimmedToken
         }
-        
-        return indentChar.repeat(Math.max(0, indentLevel)) + trimmed
-      })
-      .join('\n')
+      } else {
+        // Text content
+        currentLine += trimmedToken
+      }
+    }
+    
+    // Add any remaining content
+    if (currentLine.trim()) {
+      lines.push(indentChar.repeat(indentLevel) + currentLine.trim())
+    }
+    
+    let formatted = lines.join('\n')
 
     // Line wrapping
     if (options.wrapLines && options.wrapColumn > 0) {
@@ -246,33 +180,19 @@ export function HtmlBeautifier() {
     return doctype + formatted
   }
 
-  const getCurrentIndentLevel = (text: string, position: number): number => {
-    const before = text.substring(0, position)
-    const openTags = before.match(/<[^\/][^>]*[^\/]>/g) || []
-    const closeTags = before.match(/<\/[^>]+>/g) || []
-    return Math.max(0, openTags.length - closeTags.length)
+  const isSelfClosingTag = (tag: string): boolean => {
+    const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']
+    const tagName = tag.replace(/<\/?([^\s>]+).*/, '$1').toLowerCase()
+    return selfClosingTags.includes(tagName) || tag.endsWith('/>')
   }
 
   const processHTML = () => {
     try {
       setIsProcessing(true)
-      const validationErrors = validateHTML(input)
-      setErrors(validationErrors)
-      
-      if (validationErrors.length > 0) {
-        setOutput('')
-        return
-      }
-
-      const formatted = formatHTML(input, isMinifyMode)
+      const formatted = formatHTML(input)
       setOutput(formatted)
     } catch (err) {
-      setErrors([{
-        line: 1,
-        column: 1,
-        message: err instanceof Error ? err.message : 'Error processing HTML'
-      }])
-      setOutput('')
+      console.error('Error processing HTML:', err)
     } finally {
       setIsProcessing(false)
     }
@@ -299,11 +219,7 @@ export function HtmlBeautifier() {
       setInput(html)
       setUrlInput('')
     } catch (err) {
-      setErrors([{
-        line: 1,
-        column: 1,
-        message: 'Failed to fetch HTML from URL'
-      }])
+      console.error('Failed to fetch URL:', err)
     } finally {
       setIsProcessing(false)
     }
@@ -312,7 +228,6 @@ export function HtmlBeautifier() {
   const clearAll = () => {
     setInput('')
     setOutput('')
-    setErrors([])
   }
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -328,12 +243,25 @@ export function HtmlBeautifier() {
   return (
     <div className="container py-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">HTML Beautifier & Formatter</h1>
-          <p className="text-muted-foreground">
-            Advanced HTML formatting with customizable options, validation, and multiple export formats.
-          </p>
-        </div>
+        <Header 
+          toolTitle="HTML Beautifier & Formatter"
+          toolDescription="Advanced HTML formatting with customizable options, validation, and multiple export formats."
+        />
+
+        <div className="flex flex-wrap gap-4 mb-6">
+            <Button onClick={processHTML} disabled={isProcessing || !input.trim()}>
+              Beautify HTML
+            </Button>
+            <Button variant="outline" onClick={() => setShowUrlModal(true)}>
+              Load URL
+            </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              Upload File
+            </Button>
+            <Button variant="outline" size="sm" onClick={clearAll}>
+              Clear
+            </Button>
+          </div>
 
         <Tabs defaultValue="format" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
@@ -346,9 +274,6 @@ export function HtmlBeautifier() {
             <TabsTrigger value="compare" isActive={activeTab === 'compare'} onClick={() => setActiveTab('compare')}>
               Compare
             </TabsTrigger>
-            <TabsTrigger value="import" isActive={activeTab === 'import'} onClick={() => setActiveTab('import')}>
-              Import
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="format" isActive={activeTab === 'format'}>
@@ -356,25 +281,30 @@ export function HtmlBeautifier() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold">Input HTML</h2>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={clearAll}>
-                      Clear
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                      Upload File
-                    </Button>
+                  <div className="text-sm text-muted-foreground">
+                    {getInputStats().characters} chars, {getInputStats().words} words, {getInputStats().lines} lines
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground mb-2">
-                  {getInputStats().characters} chars, {getInputStats().words} words, {getInputStats().lines} lines
-                </div>
-                <CodeEditor
+                <SyntaxHighlighter
                   value={input}
+                  language="markup"
+                  editable={true}
                   onChange={setInput}
                   placeholder="Paste your HTML code here..."
                   rows={15}
                   showLineNumbers={true}
+                  readOnly={false}
+                  className="h-[400px]"
                 />
+                {/* <CodeEditor
+                    value={input}
+                    onChange={setInput}
+                    placeholder="Paste your HTML code here..."
+                    className="h-full"
+                    showLineNumbers={true}
+                    errorLine={null}
+                  /> */}
+                
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -386,57 +316,37 @@ export function HtmlBeautifier() {
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">
-                    {isMinifyMode ? 'Minified' : 'Beautified'} Output
-                  </h2>
-                  {output && (
-                    <div className="flex gap-2">
-                      <CopyButton text={output} />
-                      <Button variant="outline" size="sm" onClick={() => downloadFile(output, isMinifyMode ? 'minified.html' : 'beautified.html', 'text/html')}>
-                        Download HTML
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => downloadFile(output, 'formatted.txt', 'text/plain')}>
-                        Download TXT
-                      </Button>
-                    </div>
-                  )}
+                  <h2 className="text-xl font-semibold">Beautified Output</h2>
+                  <div className="flex gap-2">
+                    {output && (
+                      <>
+                        <CopyButton text={output} />
+                        <Button variant="outline" size="sm" onClick={() => downloadFile(output, 'beautified.html', 'text/html')}>
+                          Download HTML
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => downloadFile(output, 'formatted.txt', 'text/plain')}>
+                          Download TXT
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="text-sm text-muted-foreground mb-2">
                   {getOutputStats().characters} chars, {getOutputStats().words} words, {getOutputStats().lines} lines
                 </div>
-                <CodeEditor
+                <SyntaxHighlighter
                   value={output}
-                  onChange={() => {}}
-                  placeholder={`${isMinifyMode ? 'Minified' : 'Beautified'} HTML will appear here...`}
+                  language="markup"
+                  editable={false}
+                  placeholder="Beautified HTML will appear here..."
                   rows={15}
                   showLineNumbers={true}
                   readOnly={true}
+                  className="h-[400px]"
                 />
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4">
-              <Button onClick={processHTML} disabled={isProcessing || !input.trim()}>
-                {isMinifyMode ? 'Minify HTML' : 'Beautify HTML'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsMinifyMode(!isMinifyMode)}
-              >
-                Switch to {isMinifyMode ? 'Beautify' : 'Minify'} Mode
-              </Button>
-            </div>
-
-            {errors.length > 0 && (
-              <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <h3 className="text-destructive font-semibold mb-2">Validation Errors:</h3>
-                {errors.map((error, index) => (
-                  <div key={index} className="text-destructive text-sm">
-                    Line {error.line}, Column {error.column}: {error.message}
-                  </div>
-                ))}
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="options" isActive={activeTab === 'options'}>
@@ -460,7 +370,7 @@ export function HtmlBeautifier() {
                   <label className="block text-sm font-medium mb-2">Indent Size</label>
                   <Select
                     value={options.indentSize.toString()}
-                    onChange={(e) => setOptions({...options, indentSize: parseInt(e.target.value) as 2 | 4 | 8})}
+                    onChange={(e) => setOptions({...options, indentSize: parseInt(e.target.value) as 2 | 4 | 8})} // Changed from 4 to 8
                     options={[
                       { value: '2', label: '2 spaces' },
                       { value: '4', label: '4 spaces' },
@@ -575,48 +485,47 @@ export function HtmlBeautifier() {
               )}
             </div>
           </TabsContent>
+        </Tabs>
 
-          <TabsContent value="import" isActive={activeTab === 'import'}>
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-lg mb-4">Upload HTML File</h3>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                  <input
-                    type="file"
-                    accept=".html,.htm"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <div className="text-muted-foreground">
-                      Click to upload HTML file or drag and drop
-                    </div>
-                    <Button variant="outline" className="mt-4">
-                      Choose File
-                    </Button>
-                  </label>
-                </div>
-              </div>
+        
 
-              <div>
-                <h3 className="font-semibold text-lg mb-4">Fetch from URL</h3>
-                <div className="flex gap-2">
+        {/* URL Modal */}
+        {showUrlModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Load HTML from URL</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">URL</label>
                   <input
                     type="url"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
                     placeholder="https://example.com/page.html"
-                    className="flex-1 px-3 py-2 border rounded-md"
+                    className="w-full px-3 py-2 border rounded-md"
                   />
-                  <Button onClick={fetchFromURL} disabled={!urlInput.trim() || isProcessing}>
-                    Fetch
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => {
+                    setShowUrlModal(false)
+                    setUrlInput('')
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      fetchFromURL()
+                      setShowUrlModal(false)
+                    }} 
+                    disabled={!urlInput.trim() || isProcessing}
+                  >
+                    {isProcessing ? 'Loading...' : 'Load'}
                   </Button>
                 </div>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   )
