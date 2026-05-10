@@ -10,7 +10,9 @@ interface CodeEditorProps {
   rows?: number
   readOnly?: boolean
   showLineNumbers?: boolean
-  errorLine?: number | null   // ← NEW: highlight this line red
+  errorLine?: number | null
+  onFocus?: () => void
+  onBlur?: () => void
 }
 
 export const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
@@ -22,12 +24,15 @@ export const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
     rows = 6,
     readOnly = false,
     showLineNumbers = true,
-    errorLine = null,          // ← NEW
+    errorLine = null,
+    onFocus,
+    onBlur,
   }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const lineNumbersRef = useRef<HTMLDivElement>(null)
     const errorLineRef = useRef<HTMLDivElement>(null)
     const [lineNumbers, setLineNumbers] = useState<string[]>(['1'])
+    const [isFocused, setIsFocused] = useState(false)
 
     useEffect(() => {
       const lines = value.split('\n')
@@ -107,12 +112,12 @@ export const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
     const LINE_HEIGHT = 21 // 14px font * 1.5 line-height
 
     return (
-      <div className={`relative flex ${className}`}>
+      <div className={`relative flex group ${className} ${isFocused ? 'ring-2 ring-primary/20 rounded-lg' : ''}`}>
         {showLineNumbers && (
           <div
             ref={lineNumbersRef}
-            className="select-none bg-muted border border-r-0 border-input rounded-l-md text-right text-sm text-muted-foreground font-mono overflow-hidden"
-            style={{ minWidth: '2.75rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
+            className="select-none bg-muted/50 border border-r-0 border-input rounded-l-md text-right text-sm text-muted-foreground font-mono overflow-hidden transition-all duration-200 group-hover:bg-muted/70"
+            style={{ minWidth: '3rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
           >
             {lineNumbers.map((num, index) => {
               const lineNum = index + 1
@@ -120,14 +125,16 @@ export const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
               return (
                 <div
                   key={index}
+                  className="transition-all duration-200"
                   style={{
                     height: `${LINE_HEIGHT}px`,
                     lineHeight: `${LINE_HEIGHT}px`,
-                    paddingRight: '0.5rem',
-                    paddingLeft: '0.25rem',
+                    paddingRight: '0.75rem',
+                    paddingLeft: '0.5rem',
                     background: isError ? 'rgba(220,38,38,0.15)' : undefined,
                     color: isError ? 'rgb(220,38,38)' : undefined,
                     fontWeight: isError ? 700 : undefined,
+                    borderRadius: isError ? '0.25rem' : undefined,
                   }}
                 >
                   {num}
@@ -147,20 +154,32 @@ export const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
+          onFocus={() => {
+            setIsFocused(true)
+            onFocus?.()
+          }}
+          onBlur={() => {
+            setIsFocused(false)
+            onBlur?.()
+          }}
           placeholder={placeholder}
           rows={rows}
           readOnly={readOnly}
-          className={`w-full px-4 py-3 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none font-mono text-sm ${
+          className={`w-full px-4 py-3 border border-input bg-background/95 backdrop-blur-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none font-mono text-sm transition-all duration-200 placeholder:text-muted-foreground/50 hover:bg-background ${
             showLineNumbers ? 'rounded-l-none border-l-0' : ''
-          }`}
+          } ${readOnly ? 'cursor-not-allowed opacity-70' : 'hover:border-primary/30'}`}
           style={{
             tabSize: 2,
             lineHeight: `${LINE_HEIGHT}px`,
             position: 'relative',
             zIndex: 2,
-            background: 'transparent',
           }}
         />
+        
+        {/* Focus indicator */}
+        {isFocused && (
+          <div className="absolute inset-0 pointer-events-none rounded-lg border-2 border-primary/20 animate-pulse"></div>
+        )}
       </div>
     )
   }

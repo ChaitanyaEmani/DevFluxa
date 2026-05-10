@@ -33,9 +33,7 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Formatters</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/formatters/json-formatter" className="text-muted-foreground hover:text-foreground transition-colors">JSON Formatter</Link></li>
-              <li><Link href="/formatters/sql-formatter" className="text-muted-foreground hover:text-foreground transition-colors">SQL Formatter</Link></li>
               <li><Link href="/formatters/html-beautifier" className="text-muted-foreground hover:text-foreground transition-colors">HTML Beautifier</Link></li>
-              <li><Link href="/formatters/xml-formatter" className="text-muted-foreground hover:text-foreground transition-colors">XML Formatter</Link></li>
               <li><Link href="/formatters/css-formatter" className="text-muted-foreground hover:text-foreground transition-colors">CSS Formatter</Link></li>
             </ul>
           </div>
@@ -46,7 +44,6 @@ export function Footer() {
               <li><Link href="/converters/base64-encode-decode" className="text-muted-foreground hover:text-foreground transition-colors">Base64 Encode/Decode</Link></li>
               <li><Link href="/converters/timestamp-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timestamp Converter</Link></li>
               <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
-              <li><Link href="/converters/url-encoder" className="text-muted-foreground hover:text-foreground transition-colors">URL Encoder</Link></li>
             </ul>
           </div>
           

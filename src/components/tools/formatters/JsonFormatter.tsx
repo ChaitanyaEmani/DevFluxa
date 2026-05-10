@@ -32,26 +32,6 @@ interface JsonError {
   reportedCol: number | null;
 }
 
-// ─── JSON Error Analyser ──────────────────────────────────────────────────────
-//
-// WHY the naive stack approach fails
-// ───────────────────────────────────
-// Input (simplified):
-//   11:  "geo": {          <- opens at indent 6
-//   12:    "lat": "...",
-//   13:    "lng": "..."
-//   14:                    <- missing closing }
-//   15:  },                <- this closer is at indent 4  (belongs to "address", not "geo")
-//
-// A naive stack just pops on ANY closing bracket, so the "geo" { gets "matched"
-// by the "address" closer and no mismatch is detected.
-//
-// FIX: compare the INDENTATION of the closer vs the opener on top of the stack.
-// If the closer is at a shallower indent than the opener, the opener was never
-// properly closed — that opener's line is the root cause.
-//
-// This correctly yields line 11 for the example above, not line 23.
-//
 function findBracketErrorLine(
   raw: string
 ): { line: number; excerpt: string } | null {
@@ -201,7 +181,7 @@ function SyntaxHighlightedJson({ json }: { json: string }) {
       className="w-full h-full font-mono text-sm leading-relaxed p-4 overflow-auto whitespace-pre syntax-output"
       dangerouslySetInnerHTML={{ __html: highlighted }}
     />
-  )
+  );
 }
 
 // ─── Tree View ────────────────────────────────────────────────────────────────
@@ -344,8 +324,14 @@ function UrlFetchModal({ onFetch, onClose }: { onFetch: (json: string) => void; 
       <div className="bg-background border rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
         <h3 className="font-semibold text-lg mb-1">Load JSON from URL</h3>
         <p className="text-muted-foreground text-xs mb-4">Paste a plain URL or a full <code className="bg-muted px-1 rounded">curl</code> command.</p>
-        <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="https://api.example.com/data.json" rows={5}
-          className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring mb-3 resize-none" autoFocus />
+        <textarea 
+          value={input} 
+          onChange={e => setInput(e.target.value)} 
+          placeholder="https://api.example.com/data.json" 
+          rows={5}
+          className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring mb-3 resize-none" 
+          autoFocus 
+        />
         {err && <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded-md"><p className="text-destructive text-xs">{err}</p></div>}
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
@@ -361,14 +347,40 @@ function UrlFetchModal({ onFetch, onClose }: { onFetch: (json: string) => void; 
 function useHistory(initial: string) {
   const [history, setHistory] = useState<string[]>([initial])
   const [index, setIndex] = useState(0)
+
   const current = history[index]
+
   const push = useCallback((val: string) => {
-    setHistory(h => { const n = h.slice(0, index + 1); n.push(val); return n.slice(-50) })
-    setIndex(i => Math.min(i + 1, 49))
+    setHistory(prev => {
+      // avoid duplicate consecutive entries
+      if (prev[index] === val) return prev
+
+      const next = prev.slice(0, index + 1)
+      next.push(val)
+
+      // keep max 50 entries
+      return next.slice(-50)
+    })
+
+    setIndex(prev => Math.min(prev + 1, 49))
   }, [index])
-  const undo = useCallback(() => setIndex(i => Math.max(0, i - 1)), [])
-  const redo = useCallback(() => setIndex(i => Math.min(history.length - 1, i + 1)), [history.length])
-  return { current, push, undo, redo, canUndo: index > 0, canRedo: index < history.length - 1 }
+
+  const undo = useCallback(() => {
+    setIndex(prev => Math.max(prev - 1, 0))
+  }, [])
+
+  const redo = useCallback(() => {
+    setIndex(prev => Math.min(prev + 1, history.length - 1))
+  }, [history.length])
+
+  return {
+    current,
+    push,
+    undo,
+    redo,
+    canUndo: index > 0,
+    canRedo: index < history.length - 1,
+  }
 }
 
 // ─── Error Panel ──────────────────────────────────────────────────────────────
@@ -424,6 +436,7 @@ export function JsonFormatter() {
   const [parsedData, setParsedData] = useState<JsonValue | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('highlighted')
   const [showUrlModal, setShowUrlModal] = useState(false)
+  const [isMinified, setIsMinified] = useState(false)
 
   const setInput = (val: string) => { setInputRaw(val); inputHistory.push(val) }
 
@@ -454,6 +467,7 @@ export function JsonFormatter() {
         setJsonError(null)
         setStats(null)
         setParsedData(null)
+        setIsMinified(false)
         return true
       }
       const parsed = JSON.parse(raw)
@@ -461,10 +475,11 @@ export function JsonFormatter() {
       setJsonError(null)
       setStats(computeStats(parsed))
       setParsedData(parsed)
+      setIsMinified(false)
       return true
     } catch (err: any) {
       setJsonError(analyseJsonError(raw, err))
-      setOutput(''); setStats(null); setParsedData(null)
+      setOutput(''); setStats(null); setParsedData(null); setIsMinified(false)
       return false
     }
   }
@@ -474,19 +489,21 @@ export function JsonFormatter() {
       const parsed = JSON.parse(input)
       setOutput(JSON.stringify(parsed))
       setJsonError(null); setStats(computeStats(parsed)); setParsedData(parsed)
+      setIsMinified(true)
+      setViewMode('highlighted')
     } catch (err: any) {
       setJsonError(analyseJsonError(input, err))
-      setOutput(''); setStats(null); setParsedData(null)
+      setOutput(''); setStats(null); setParsedData(null); setIsMinified(false)
     }
   }
 
   const clearAll = () => {
-    setInputRaw(''); setOutput(''); setJsonError(null); setStats(null); setParsedData(null)
+    setInputRaw(''); setOutput(''); setJsonError(null); setStats(null); setParsedData(null); setIsMinified(false)
   }
 
   const viewTabs: { id: ViewMode; label: string }[] = [
     { id: 'highlighted', label: 'Highlighted' },
-    { id: 'tree',        label: 'Tree View'   },
+    ...(isMinified ? [] : [{ id: 'tree' as ViewMode, label: 'Tree View'   }]),
   ]
 
   return (
@@ -514,26 +531,45 @@ export function JsonFormatter() {
         <div className="max-w-6xl mx-auto">
           <Header toolTitle="JSON Formatter" toolDescription="Format, validate, minify, explore, and share JSON data — entirely in your browser." />
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Button onClick={() => processJson(input, 2)}>Format JSON</Button>
-            <Button variant="outline" onClick={minifyJson}>Minify</Button>
-            <Button variant="outline" onClick={() => setShowUrlModal(true)}>Load from URL</Button>
-            <Button variant="outline" onClick={() => { inputHistory.undo(); setInputRaw(inputHistory.current) }} disabled={!inputHistory.canUndo}>↩ Undo</Button>
-            <Button variant="outline" onClick={() => { inputHistory.redo(); setInputRaw(inputHistory.current) }} disabled={!inputHistory.canRedo}>↪ Redo</Button>
-            <Button variant="outline" onClick={clearAll}>Clear</Button>
+          <div className="flex gap-2 mb-6">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => processJson(input, 2)} className="shadow-sm hover:shadow-md transition-all duration-200 bg-primary hover:bg-primary/90 flex-1 sm:flex-none">
+                <span className="mr-2 hidden sm:inline">✨</span>Format JSON
+              </Button>
+              {viewMode !== 'tree' && (
+                <Button variant="outline" onClick={minifyJson} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-primary/50 flex-1 sm:flex-none">
+                  <span className="mr-2 hidden sm:inline">📦</span>Minify
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setShowUrlModal(true)} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-primary/50 flex-1 sm:flex-none">
+                <span className="mr-2 hidden sm:inline">🌐</span>Load URL
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:gap-3 sm:ml-auto">
+              <Button variant="outline" onClick={clearAll} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-destructive/50 text-destructive hover:bg-destructive/5 flex-1 sm:flex-none">
+                <span className="mr-2 hidden sm:inline">🗑️</span>Clear
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-semibold">Input JSON</h2>
-                <span className="text-xs text-muted-foreground">Ctrl+Z / Ctrl+Y to undo/redo</span>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Input JSON</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">Ctrl+Z / Ctrl+Y to undo/redo</span>
+                  <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">Auto-bracket completion</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex gap-1 border rounded-md p-0.5 bg-muted/30">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex gap-1 p-1 bg-muted/20 rounded-lg border border-border/50 w-full sm:w-auto">
                   {viewTabs.map(tab => (
                     <button key={tab.id} onClick={() => setViewMode(tab.id)}
-                      className={`px-3 py-1 text-sm rounded transition-colors ${viewMode === tab.id ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}>
+                      className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm rounded-md transition-all duration-200 font-medium ${
+                        viewMode === tab.id 
+                          ? 'bg-background shadow-sm text-primary border border-primary/20' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                      }`}>
                       {tab.label}
                     </button>
                   ))}
@@ -547,59 +583,85 @@ export function JsonFormatter() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
               {/* Input — errorLine highlights the actual root-cause line */}
-              <div className="h-96 border border-input rounded-md overflow-hidden">
-                <CodeEditor
-                  value={input}
-                  onChange={setInput}
-                  placeholder="Paste your JSON here..."
-                  className="h-full"
-                  showLineNumbers={true}
-                  errorLine={jsonError?.causeLine ?? null}
-                />
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative h-80 sm:h-96 lg:h-[32rem] border-2 border-border/50 rounded-lg overflow-hidden bg-background/50 backdrop-blur-sm">
+                  <CodeEditor
+                    value={input}
+                    onChange={setInput}
+                    placeholder="Paste your JSON here... or try typing {&quot;example&quot;: &quot;data&quot;}"
+                    className="h-full"
+                    showLineNumbers={true}
+                    errorLine={jsonError?.causeLine ?? null}
+                  />
+                </div>
               </div>
 
               {/* Output */}
-              <div className="h-96 border border-input rounded-md bg-background overflow-hidden">
-                {jsonError && <ErrorPanel error={jsonError} />}
-                {!jsonError && viewMode === 'highlighted' && output && (
-                  <div className="h-full overflow-auto"><SyntaxHighlightedJson json={output} /></div>
-                )}
-                {!jsonError && viewMode === 'highlighted' && !output && (
-                  <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
-                    Format JSON first to see syntax highlighting
-                  </div>
-                )}
-                {!jsonError && viewMode === 'tree' && parsedData !== null && (
-                  <div className="h-full overflow-auto py-2"><TreeView data={parsedData} /></div>
-                )}
-                {!jsonError && viewMode === 'tree' && parsedData === null && (
-                  <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
-                    Format JSON first to see tree view
-                  </div>
-                )}
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative h-80 sm:h-96 lg:h-[32rem] border-2 border-border/50 rounded-lg bg-background/50 backdrop-blur-sm overflow-hidden">
+                  {jsonError && <ErrorPanel error={jsonError} />}
+                  {!jsonError && viewMode === 'highlighted' && output && (
+                    <div className="h-full overflow-auto"><SyntaxHighlightedJson json={output} /></div>
+                  )}
+                  {!jsonError && viewMode === 'highlighted' && !output && (
+                    <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-3xl sm:text-4xl mb-2">🎨</div>
+                        <div className="text-sm sm:text-base">Format JSON first to see syntax highlighting</div>
+                      </div>
+                    </div>
+                  )}
+                  {!jsonError && viewMode === 'tree' && parsedData !== null && (
+                    <div className="h-full overflow-auto py-2"><TreeView data={parsedData} /></div>
+                  )}
+                  {!jsonError && viewMode === 'tree' && parsedData === null && (
+                    <div className="h-full p-4 text-muted-foreground text-sm font-mono flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-3xl sm:text-4xl mb-2">🌳</div>
+                        <div className="text-sm sm:text-base">Format JSON first to see tree view</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {stats && <StatsPanel stats={stats} />}
-
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { title: 'Syntax Highlighting',  desc: 'Keys, strings, numbers, booleans, and nulls are color-coded for quick scanning.' },
-              { title: 'Tree Explorer',         desc: 'Collapsible tree view for navigating large nested JSON structures.' },
-              { title: 'Smart Error Detection', desc: 'Finds the unclosed bracket (root cause), not just where the parser gave up.' },
-              { title: 'JSON Statistics',       desc: 'Shows key count, max depth, array lengths, and data type breakdown.' },
-              { title: 'Undo / Redo',           desc: 'Full edit history with Ctrl+Z / Ctrl+Y keyboard shortcuts.' },
-              { title: 'Load from URL',         desc: 'Fetch JSON directly from any public API endpoint or URL.' },
-              { title: 'Pretty Print & Minify', desc: 'Format with proper indentation or strip all whitespace for production.' },
-            ].map(({ title, desc }) => (
-              <div key={title} className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground">{desc}</p>
+          {stats && (
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative border-2 border-border/50 rounded-lg bg-background/50 backdrop-blur-sm">
+                <StatsPanel stats={stats} />
               </div>
-            ))}
+            </div>
+          )}
+
+          <div className="mt-12 sm:mt-16">
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Features</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {[
+                { title: 'Syntax Highlighting',  desc: 'Keys, strings, numbers, booleans, and nulls are color-coded for quick scanning.', icon: '🎨' },
+                { title: 'Tree Explorer',         desc: 'Collapsible tree view for navigating large nested JSON structures.', icon: '🌳' },
+                { title: 'Smart Error Detection', desc: 'Finds the unclosed bracket (root cause), not just where the parser gave up.', icon: '🔍' },
+                { title: 'JSON Statistics',       desc: 'Shows key count, max depth, array lengths, and data type breakdown.', icon: '📊' },
+                { title: 'Undo / Redo',           desc: 'Full edit history with Ctrl+Z / Ctrl+Y keyboard shortcuts.', icon: '↩️' },
+                { title: 'Load from URL',         desc: 'Fetch JSON directly from any public API endpoint or URL.', icon: '🌐' },
+                { title: 'Pretty Print & Minify', desc: 'Format with proper indentation or strip all whitespace for production.', icon: '✨' },
+              ].map(({ title, desc, icon }) => (
+                <div key={title} className="group relative p-4 sm:p-6 border-2 border-border/50 rounded-lg bg-background/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative">
+                    <div className="text-2xl sm:text-3xl mb-2 sm:mb-3">{icon}</div>
+                    <h3 className="font-semibold mb-2 text-base sm:text-lg">{title}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
