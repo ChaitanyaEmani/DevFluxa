@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight, Code, Database, Palette, Clock, Link2, FileText, Hash, Shield } from 'lucide-react'
+import { ArrowRight, Code, Database, Palette, Clock, Link2, FileText, Hash, Shield, Search } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'All Developer Tools - DevFluxa',
@@ -61,6 +61,37 @@ const tools = [
         description: 'Encode and decode URLs for safe transmission',
         href: '/converters/url-encoder',
         features: ['Special Characters', 'Safe Transmission', 'Bidirectional', 'Format Validation']
+      }
+    ]
+  },
+  {
+    category: 'Other Tools',
+    description: 'Utility tools for developers and content creators.',
+    icon: Search,
+    items: [
+      {
+        name: 'Regex Tester',
+        description: 'Test and debug regular expressions with real-time matching and highlighting',
+        href: '/tools/regex-tester',
+        features: ['Real-time Testing', 'Pattern Highlighting', 'Common Patterns', 'Match Groups']
+      },
+      {
+        name: 'Word Counter',
+        description: 'Count words, characters, and reading time of your text',
+        href: '/tools/word-counter',
+        features: ['Word Count', 'Character Count', 'Reading Time', 'Text Analysis']
+      },
+      {
+        name: 'Password Generator',
+        description: 'Generate secure passwords with customizable options',
+        href: '/tools/password-generator',
+        features: ['Custom Length', 'Character Types', 'Secure Generation', 'Copy to Clipboard']
+      },
+      {
+        name: 'Hash Generator',
+        description: 'Generate MD5, SHA1, SHA256 hashes of your text',
+        href: '/tools/hash-generator',
+        features: ['Multiple Algorithms', 'Instant Hashing', 'Copy Results', 'Text Input']
       }
     ]
   }
