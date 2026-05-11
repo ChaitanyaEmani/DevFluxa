@@ -553,6 +553,15 @@ export function CssFormatter() {
     }
   }, [input, options])
 
+  // ── Auto-format on option changes ───────────────────────────────────────
+
+  useEffect(() => {
+    // Auto-reformat when minify or vendorPrefixing changes (and we have output)
+    if (output) {
+      formatCss()
+    }
+  }, [options.minify, options.vendorPrefixing, output, formatCss])
+
   // ── Keyboard shortcuts ───────────────────────────────────────────────────────
 
   useEffect(() => {
