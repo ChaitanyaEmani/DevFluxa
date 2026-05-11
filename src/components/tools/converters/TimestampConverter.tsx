@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 
 export function TimestampConverter() {
   const [unixTimestamp, setUnixTimestamp] = useState('')
-  const [dateTime, setDateTime] = useState('')
+  // Store datetime-local value in its native format: "YYYY-MM-DDTHH:mm"
+  const [dateTimeLocal, setDateTimeLocal] = useState('')
   const [currentTime, setCurrentTime] = useState(new Date())
   const [error, setError] = useState('')
 
@@ -14,69 +14,103 @@ export function TimestampConverter() {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
-
     return () => clearInterval(timer)
   }, [])
 
+  // Format a Date → "YYYY-MM-DDTHH:mm" (value expected by datetime-local input)
+  const toDateTimeLocalValue = (date: Date): string => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+    )
+  }
+
+  // Display label: "YYYY-MM-DD HH:mm:ss" in local time
+  const toDisplayString = (date: Date): string => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+      `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    )
+  }
+
   const convertToDateTime = () => {
-    try {
-      if (!unixTimestamp.trim()) {
-        throw new Error('Please enter a Unix timestamp')
-      }
+    setError('')
+    const raw = unixTimestamp.trim()
 
-      const timestamp = parseInt(unixTimestamp)
-      if (isNaN(timestamp)) {
-        throw new Error('Invalid timestamp: must be a number')
-      }
-
-      // Validate timestamp range (reasonable limits)
-      const minTimestamp = -2208988800 // Year 1900
-      const maxTimestamp = 253402300799 // Year 9999
-      
-      if (timestamp < minTimestamp || timestamp > maxTimestamp) {
-        throw new Error(`Timestamp out of valid range (${minTimestamp} to ${maxTimestamp})`)
-      }
-
-      const date = new Date(timestamp * 1000)
-      if (isNaN(date.getTime())) {
-        throw new Error('Invalid timestamp: cannot convert to date')
-      }
-
-      setDateTime(date.toISOString().slice(0, 19).replace('T', ' '))
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error converting timestamp'
-      setError(errorMessage)
+    if (!raw) {
+      setError('Please enter a Unix timestamp.')
+      return
     }
+
+    const timestamp = Number(raw)
+    if (!Number.isFinite(timestamp) || raw === '') {
+      setError('Invalid timestamp: must be a number.')
+      return
+    }
+
+    const minTimestamp = -2208988800 // Year 1900
+    const maxTimestamp = 253402300799 // Year 9999
+    if (timestamp < minTimestamp || timestamp > maxTimestamp) {
+      setError(`Timestamp out of valid range (${minTimestamp} to ${maxTimestamp}).`)
+      return
+    }
+
+    const date = new Date(timestamp * 1000)
+    if (isNaN(date.getTime())) {
+      setError('Invalid timestamp: cannot convert to date.')
+      return
+    }
+
+    setDateTimeLocal(toDateTimeLocalValue(date))
   }
 
   const convertToTimestamp = () => {
-    try {
-      const date = new Date(dateTime)
-      if (isNaN(date.getTime())) {
-        throw new Error('Invalid date format')
-      }
-
-      const timestamp = Math.floor(date.getTime() / 1000)
-      setUnixTimestamp(timestamp.toString())
-    } catch (err) {
-      console.error('Error converting date:', err)
+    setError('')
+    if (!dateTimeLocal) {
+      setError('Please select a date and time first.')
+      return
     }
+
+    // datetime-local value is treated as local time by the Date constructor
+    const date = new Date(dateTimeLocal)
+    if (isNaN(date.getTime())) {
+      setError('Invalid date: please use the date picker to select a valid date.')
+      return
+    }
+
+    const timestamp = Math.floor(date.getTime() / 1000)
+    setUnixTimestamp(timestamp.toString())
   }
 
   const getCurrentTimestamp = () => {
-    const now = Math.floor(Date.now() / 1000)
-    setUnixTimestamp(now.toString())
-    const date = new Date(now * 1000)
-    setDateTime(date.toISOString().slice(0, 19).replace('T', ' '))
+    setError('')
+    const now = new Date()
+    const timestamp = Math.floor(now.getTime() / 1000)
+    setUnixTimestamp(timestamp.toString())
+    setDateTimeLocal(toDateTimeLocalValue(now))
   }
 
   const clearAll = () => {
     setUnixTimestamp('')
-    setDateTime('')
+    setDateTimeLocal('')
     setError('')
   }
 
   const currentTimestamp = Math.floor(currentTime.getTime() / 1000)
+
+  // Only compute milliseconds display when the input is a valid number
+  const parsedTs = Number(unixTimestamp)
+  const msDisplay =
+    unixTimestamp.trim() !== '' && Number.isFinite(parsedTs)
+      ? parsedTs * 1000
+      : null
+
+  // Derive a human-readable ISO label from the datetime-local value
+  const dateDisplayLabel = dateTimeLocal
+    ? toDisplayString(new Date(dateTimeLocal))
+    : null
 
   return (
     <div className="container py-8">
@@ -95,7 +129,8 @@ export function TimestampConverter() {
             {currentTime.toLocaleString()}
           </p>
           <p className="text-sm text-muted-foreground">
-            Unix Timestamp: <span className="font-mono">{currentTimestamp}</span>
+            Unix Timestamp:{' '}
+            <span className="font-mono">{currentTimestamp}</span>
           </p>
         </div>
 
@@ -107,17 +142,21 @@ export function TimestampConverter() {
               <input
                 type="text"
                 value={unixTimestamp}
-                onChange={(e) => setUnixTimestamp(e.target.value)}
-                placeholder="Enter Unix timestamp..."
+                onChange={(e) => {
+                  setUnixTimestamp(e.target.value)
+                  setError('')
+                }}
+                placeholder="Enter Unix timestamp…"
                 className="w-full px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono"
               />
               <Button onClick={convertToDateTime} className="w-full">
-                Convert to Date/Time
+                Convert to Date / Time ↓
               </Button>
-              {unixTimestamp && (
+              {msDisplay !== null && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    Milliseconds: <span className="font-mono">{parseInt(unixTimestamp) * 1000}</span>
+                    Milliseconds:{' '}
+                    <span className="font-mono">{msDisplay.toLocaleString()}</span>
                   </p>
                 </div>
               )}
@@ -126,21 +165,25 @@ export function TimestampConverter() {
 
           {/* Date/Time Input */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Date/Time</h2>
+            <h2 className="text-xl font-semibold mb-4">Date / Time</h2>
             <div className="space-y-4">
               <input
                 type="datetime-local"
-                value={dateTime ? dateTime.slice(0, 16) : ''}
-                onChange={(e) => setDateTime(e.target.value)}
+                value={dateTimeLocal}
+                onChange={(e) => {
+                  setDateTimeLocal(e.target.value)
+                  setError('')
+                }}
                 className="w-full px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               <Button onClick={convertToTimestamp} className="w-full">
-                Convert to Timestamp
+                Convert to Timestamp ↑
               </Button>
-              {dateTime && (
+              {dateDisplayLabel && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    ISO Format: <span className="font-mono">{dateTime}</span>
+                    Local time:{' '}
+                    <span className="font-mono">{dateDisplayLabel}</span>
                   </p>
                 </div>
               )}
@@ -152,10 +195,10 @@ export function TimestampConverter() {
         {error && (
           <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-destructive text-sm">
-              <strong>Timestamp Conversion Error:</strong> {error}
+              <strong>Error:</strong> {error}
             </p>
-            <p className="text-destructive text-xs mt-2">
-              Please check your input format. Unix timestamps should be numbers, dates should be in valid format.
+            <p className="text-destructive text-xs mt-1">
+              Unix timestamps must be integers. Use the date picker for the date/time side.
             </p>
           </div>
         )}
@@ -175,19 +218,19 @@ export function TimestampConverter() {
           <div className="p-4 border rounded-lg">
             <h3 className="font-semibold mb-2">Real-time Updates</h3>
             <p className="text-sm text-muted-foreground">
-              Shows current time and updates every second
+              Shows current time and updates every second.
             </p>
           </div>
           <div className="p-4 border rounded-lg">
             <h3 className="font-semibold mb-2">Multiple Formats</h3>
             <p className="text-sm text-muted-foreground">
-              Supports Unix timestamp and ISO date formats
+              Supports Unix timestamp and local date/time formats.
             </p>
           </div>
           <div className="p-4 border rounded-lg">
             <h3 className="font-semibold mb-2">Instant Conversion</h3>
             <p className="text-sm text-muted-foreground">
-              Convert between formats with a single click
+              Convert between formats with a single click.
             </p>
           </div>
         </div>

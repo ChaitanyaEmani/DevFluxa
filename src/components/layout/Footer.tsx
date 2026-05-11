@@ -47,7 +47,7 @@ export function Footer() {
             </ul>
           </div>
 
-            <div>
+          <div>
             <h3 className="font-semibold mb-4">Other Tools</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/tools/regex-tester" className="text-muted-foreground hover:text-foreground transition-colors">Regex Tester</Link></li>
