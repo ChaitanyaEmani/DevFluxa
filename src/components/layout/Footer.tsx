@@ -46,6 +46,16 @@ export function Footer() {
               <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
             </ul>
           </div>
+
+            <div>
+            <h3 className="font-semibold mb-4">Other Tools</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/tools/regex-tester" className="text-muted-foreground hover:text-foreground transition-colors">Regex Tester</Link></li>
+              <li><Link href="/tools/word-counter" className="text-muted-foreground hover:text-foreground transition-colors">Word Counter</Link></li>
+              <li><Link href="/tools/password-generator" className="text-muted-foreground hover:text-foreground transition-colors">Password Generator</Link></li>
+              <li><Link href="/tools/hash-generator" className="text-muted-foreground hover:text-foreground transition-colors">Hash Generator</Link></li>
+            </ul>
+          </div>
           
           <div>
             <h3 className="font-semibold mb-4">Company</h3>
