@@ -12,7 +12,11 @@ export async function generateStaticParams() {
   return [
     { toolSlug: 'json-formatter' },
     { toolSlug: 'html-beautifier' },
-    { toolSlug: 'css-formatter' }
+    { toolSlug: 'css-formatter' },
+    { toolSlug: 'javascript-formatter' },
+    { toolSlug: 'sql-formatter' },
+    { toolSlug: 'xml-formatter' },
+    { toolSlug: 'markdown-formatter' }
   ]
 }
 
@@ -54,6 +58,18 @@ export default async function ToolPage({ params }: ToolPageProps) {
         break
       case 'css-formatter':
         ToolComponent = (await import('@/components/tools/formatters/CssFormatter')).CssFormatter
+        break
+      case 'javascript-formatter':
+        ToolComponent = (await import('@/components/tools/formatters/JavaScriptFormatter')).JavaScriptFormatter
+        break
+      case 'sql-formatter':
+        ToolComponent = (await import('@/components/tools/formatters/SqlFormatter')).SqlFormatter
+        break
+      case 'xml-formatter':
+        ToolComponent = (await import('@/components/tools/formatters/XmlFormatter')).XmlFormatter
+        break
+      case 'markdown-formatter':
+        ToolComponent = (await import('@/components/tools/formatters/MarkdownFormatter')).MarkdownFormatter
         break
       default:
         notFound()

@@ -12,7 +12,11 @@ export async function generateStaticParams() {
   return [
     { toolSlug: 'word-counter' },
     { toolSlug: 'password-generator' },
-    { toolSlug: 'hash-generator' }
+    { toolSlug: 'hash-generator' },
+    { toolSlug: 'uuid-generator' },
+    { toolSlug: 'meta-tag-generator' },
+    { toolSlug: 'fake-user-data-generator' },
+    { toolSlug: 'cron-expression-generator' }
   ]
 }
 
@@ -42,30 +46,38 @@ export default async function ToolPage({ params }: ToolPageProps) {
     notFound()
   }
 
-  // Static imports to avoid dynamic import issues
-  switch (toolSlug) {
-    case 'word-counter':
-      const { WordCounter } = await import('@/components/tools/other/WordCounter')
-      return <WordCounter />
-    case 'password-generator':
-      try {
-        const passwordGeneratorModule = await import('@/components/tools/other/PasswordGenerator')
-        const PasswordGenerator = passwordGeneratorModule.PasswordGenerator
-        return <PasswordGenerator />
-      } catch (error) {
-        console.error('PasswordGenerator import error:', error)
+  // Dynamic import of tool component
+  let ToolComponent
+  try {
+    switch (toolSlug) {
+      case 'word-counter':
+        ToolComponent = (await import('@/components/tools/other/WordCounter')).WordCounter
+        break
+      case 'password-generator':
+        ToolComponent = (await import('@/components/tools/other/PasswordGenerator')).PasswordGenerator
+        break
+      case 'hash-generator':
+        ToolComponent = (await import('@/components/tools/other/HashGenerator')).HashGenerator
+        break
+      case 'uuid-generator':
+        ToolComponent = (await import('@/components/tools/other/UuidGenerator')).UuidGenerator
+        break
+      case 'meta-tag-generator':
+        ToolComponent = (await import('@/components/tools/other/MetaTagGenerator')).MetaTagGenerator
+        break
+      case 'fake-user-data-generator':
+        ToolComponent = (await import('@/components/tools/other/FakeUserDataGenerator')).FakeUserDataGenerator
+        break
+      case 'cron-expression-generator':
+        ToolComponent = (await import('@/components/tools/other/CronExpressionGenerator')).CronExpressionGenerator
+        break
+      default:
         notFound()
-      }
-    case 'hash-generator':
-      try {
-        const hashGeneratorModule = await import('@/components/tools/other/HashGenerator')
-        const HashGenerator = hashGeneratorModule.HashGenerator
-        return <HashGenerator />
-      } catch (error) {
-        console.error('HashGenerator import error:', error)
-        notFound()
-      }
-    default:
-      notFound()
+    }
+  } catch (error) {
+    console.error('Tool import error:', error)
+    notFound()
   }
+
+  return <ToolComponent />
 }

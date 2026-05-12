@@ -11,7 +11,12 @@ interface ToolPageProps {
 export async function generateStaticParams() {
   return [
     { toolSlug: 'timestamp-converter' },
-    { toolSlug: 'rgb-to-hex' }
+    { toolSlug: 'rgb-to-hex' },
+    { toolSlug: 'jwt-decoder' },
+    { toolSlug: 'text-to-binary' },
+    { toolSlug: 'binary-to-text' },
+    { toolSlug: 'timezone-converter' },
+    { toolSlug: 'date-difference-calculator' }
   ]
 }
 
@@ -50,6 +55,21 @@ export default async function ToolPage({ params }: ToolPageProps) {
         break
       case 'rgb-to-hex':
         ConverterComponent = (await import('@/components/tools/converters/RgbToHex')).RgbToHex
+        break
+      case 'jwt-decoder':
+        ConverterComponent = (await import('@/components/tools/converters/JwtDecoder')).JwtDecoder
+        break
+      case 'text-to-binary':
+        ConverterComponent = (await import('@/components/tools/converters/TextToBinary')).TextToBinary
+        break
+      case 'binary-to-text':
+        ConverterComponent = (await import('@/components/tools/converters/BinaryToText')).BinaryToText
+        break
+      case 'timezone-converter':
+        ConverterComponent = (await import('@/components/tools/converters/TimezoneConverter')).TimezoneConverter
+        break
+      case 'date-difference-calculator':
+        ConverterComponent = (await import('@/components/tools/converters/DateDifferenceCalculator')).DateDifferenceCalculator
         break
       default:
         notFound()
