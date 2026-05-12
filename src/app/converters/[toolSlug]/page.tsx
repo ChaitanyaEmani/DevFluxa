@@ -12,9 +12,7 @@ export async function generateStaticParams() {
   return [
     { toolSlug: 'base64-encode-decode' },
     { toolSlug: 'timestamp-converter' },
-    { toolSlug: 'yaml-to-json' },
-    { toolSlug: 'rgb-to-hex' },
-    { toolSlug: 'url-encoder' }
+    { toolSlug: 'rgb-to-hex' }
   ]
 }
 
@@ -56,12 +54,6 @@ export default async function ToolPage({ params }: ToolPageProps) {
         break
       case 'rgb-to-hex':
         ConverterComponent = (await import('@/components/tools/converters/RgbToHex')).RgbToHex
-        break
-      case 'url-encoder':
-        ConverterComponent = (await import('@/components/tools/converters/UrlEncoder')).UrlEncoder
-        break
-      case 'yaml-to-json':
-        ConverterComponent = (await import('@/components/tools/converters/YamlToJson')).YamlToJson
         break
       default:
         notFound()
