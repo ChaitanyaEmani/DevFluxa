@@ -10,7 +10,6 @@ interface ToolPageProps {
 
 export async function generateStaticParams() {
   return [
-    { toolSlug: 'regex-tester' },
     { toolSlug: 'word-counter' },
     { toolSlug: 'password-generator' },
     { toolSlug: 'hash-generator' }
@@ -45,9 +44,6 @@ export default async function ToolPage({ params }: ToolPageProps) {
 
   // Static imports to avoid dynamic import issues
   switch (toolSlug) {
-    case 'regex-tester':
-      const { RegexTester } = await import('@/components/tools/other/RegexTester')
-      return <RegexTester />
     case 'word-counter':
       const { WordCounter } = await import('@/components/tools/other/WordCounter')
       return <WordCounter />

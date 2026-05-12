@@ -43,19 +43,6 @@ export const tools: Tool[] = [
     tag: 'Styling',
     path: '/formatters/css-formatter'
   },
-
-  // Converters
-  {
-    id: 'base64-encode-decode',
-    name: 'Base64 Encode/Decode',
-    description: 'Encode and decode Base64 strings instantly',
-    category: 'converter',
-    icon: 'Shield',
-    color: 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300',
-    tag: 'Security',
-    path: '/converters/base64-encode-decode',
-    popular: true
-  },
   {
     id: 'timestamp-converter',
     name: 'Timestamp Converter',
@@ -76,29 +63,7 @@ export const tools: Tool[] = [
     tag: 'Design',
     path: '/converters/rgb-to-hex'
   },
-  {
-    id: 'url-encoder',
-    name: 'URL Encoder',
-    description: 'Encode and decode URLs for safe transmission',
-    category: 'converter',
-    icon: 'Link',
-    color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900 dark:text-cyan-300',
-    tag: 'Web',
-    path: '/converters/url-encoder'
-  },
 
-  // Other Tools
-  {
-    id: 'regex-tester',
-    name: 'Regex Tester',
-    description: 'Test and debug regular expressions with real-time matching',
-    category: 'other',
-    icon: 'Search',
-    color: 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300',
-    tag: 'Coding',
-    path: '/tools/regex-tester',
-    popular: true
-  },
   {
     id: 'word-counter',
     name: 'Word Counter',

@@ -10,7 +10,6 @@ interface ToolPageProps {
 
 export async function generateStaticParams() {
   return [
-    { toolSlug: 'base64-encode-decode' },
     { toolSlug: 'timestamp-converter' },
     { toolSlug: 'rgb-to-hex' }
   ]
@@ -46,9 +45,6 @@ export default async function ToolPage({ params }: ToolPageProps) {
   let ConverterComponent
   try {
     switch (toolSlug) {
-      case 'base64-encode-decode':
-        ConverterComponent = (await import('@/components/tools/converters/Base64EncodeDecode')).Base64EncodeDecode
-        break
       case 'timestamp-converter':
         ConverterComponent = (await import('@/components/tools/converters/TimestampConverter')).TimestampConverter
         break

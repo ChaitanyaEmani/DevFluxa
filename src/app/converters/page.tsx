@@ -4,8 +4,8 @@ import { getToolsByCategory } from '@/config/tools'
 
 export const metadata = generateMetadata({
   title: 'Converters - Free Online Data Conversion Tools',
-  description: 'Convert between different data formats instantly. Base64, timestamps, RGB to HEX, URL encoding and more.',
-  keywords: ['data converter', 'Base64 encoder', 'timestamp converter', 'RGB to HEX', 'URL encoder', 'online converter']
+  description: 'Convert between different data formats instantly. Timestamps, RGB to HEX, URL encoding and more.',
+  keywords: ['data converter', 'timestamp converter', 'RGB to HEX', 'URL encoder', 'online converter']
 })
 
 export default function ConvertersPage() {
@@ -78,7 +78,7 @@ export default function ConvertersPage() {
               <div>
                 <p className="font-medium">Data Processing</p>
                 <p className="text-sm text-muted-foreground">
-                  Convert YAML configurations to JSON, encode data in Base64
+                  Convert YAML configurations to JSON
                 </p>
               </div>
             </div>

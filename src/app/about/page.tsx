@@ -81,29 +81,23 @@ export default function AboutPage() {
               <h3 className="font-semibold mb-3">📝 Code Formatters</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• JSON Formatter & Validator</li>
-                <li>• SQL Query Formatter</li>
                 <li>• HTML Beautifier</li>
-                <li>• XML Formatter</li>
                 <li>• CSS Formatter</li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-3">🔄 Data Converters</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Base64 Encode/Decode</li>
                 <li>• Timestamp Converter</li>
                 <li>• RGB to HEX Converter</li>
-                <li>• URL Encoder/Decoder</li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-3">🛠️ Utility Tools</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Regex Tester</li>
                 <li>• Word Counter</li>
                 <li>• Password Generator</li>
                 <li>• Hash Generator</li>
-                <li>• QR Code Generator</li>
               </ul>
             </div>
           </div>

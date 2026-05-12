@@ -39,12 +39,6 @@ const tools = [
     icon: Database,
     items: [
       {
-        name: 'Base64 Encode/Decode',
-        description: 'Encode and decode Base64 strings for safe data transmission',
-        href: '/converters/base64-encode-decode',
-        features: ['Bidirectional', 'Unicode Support', 'Instant Processing', 'Validation']
-      },
-      {
         name: 'Timestamp Converter',
         description: 'Convert between Unix timestamps and human-readable dates',
         href: '/converters/timestamp-converter',
@@ -56,12 +50,6 @@ const tools = [
         href: '/converters/rgb-to-hex',
         features: ['Live Preview', 'Color Validation', 'Bidirectional', '3/6-digit Support']
       },
-      {
-        name: 'URL Encoder',
-        description: 'Encode and decode URLs for safe transmission',
-        href: '/converters/url-encoder',
-        features: ['Special Characters', 'Safe Transmission', 'Bidirectional', 'Format Validation']
-      }
     ]
   },
   {
@@ -69,12 +57,6 @@ const tools = [
     description: 'Utility tools for developers and content creators.',
     icon: Search,
     items: [
-      {
-        name: 'Regex Tester',
-        description: 'Test and debug regular expressions with real-time matching and highlighting',
-        href: '/tools/regex-tester',
-        features: ['Real-time Testing', 'Pattern Highlighting', 'Common Patterns', 'Match Groups']
-      },
       {
         name: 'Word Counter',
         description: 'Count words, characters, and reading time of your text',

@@ -41,7 +41,6 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Converters</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/converters/base64-encode-decode" className="text-muted-foreground hover:text-foreground transition-colors">Base64 Encode/Decode</Link></li>
               <li><Link href="/converters/timestamp-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timestamp Converter</Link></li>
               <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
             </ul>
@@ -50,7 +49,6 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Other Tools</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/tools/regex-tester" className="text-muted-foreground hover:text-foreground transition-colors">Regex Tester</Link></li>
               <li><Link href="/tools/word-counter" className="text-muted-foreground hover:text-foreground transition-colors">Word Counter</Link></li>
               <li><Link href="/tools/password-generator" className="text-muted-foreground hover:text-foreground transition-colors">Password Generator</Link></li>
               <li><Link href="/tools/hash-generator" className="text-muted-foreground hover:text-foreground transition-colors">Hash Generator</Link></li>
