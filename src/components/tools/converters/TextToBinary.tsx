@@ -6,50 +6,8 @@ import { CopyButton } from "@/components/ui/CopyButton"
 import { Download } from "@/components/ui/Download"
 import { Button } from "@/components/ui/Button"
 import { Header } from "@/components/ui/Header"
+import { textToBinary, binaryToText } from "@/lib/converters/binary"
 
-function textToBinary(text: string, options: {
-  separator?: string
-  encoding?: 'utf8' | 'ascii'
-} = {}): string {
-  const { separator = ' ', encoding = 'utf8' } = options
-  
-  if (!text) return ''
-  
-  try {
-    return text
-      .split('')
-      .map(char => {
-        const code = char.charCodeAt(0)
-        return code.toString(2).padStart(8, '0')
-      })
-      .join(separator)
-  } catch (error) {
-    throw new Error('Failed to convert text to binary')
-  }
-}
-
-function binaryToText(binary: string, options: {
-  separator?: string
-  encoding?: 'utf8' | 'ascii'
-} = {}): string {
-  const { separator = ' ', encoding = 'utf8' } = options
-  
-  if (!binary) return ''
-  
-  try {
-    return binary
-      .split(separator)
-      .filter(bits => bits.trim()) // Remove empty strings
-      .map(bits => {
-        const code = parseInt(bits, 2)
-        if (isNaN(code)) throw new Error(`Invalid binary sequence: ${bits}`)
-        return String.fromCharCode(code)
-      })
-      .join('')
-  } catch (error) {
-    throw new Error('Failed to convert binary to text')
-  }
-}
 
 export function TextToBinary() {
   const [input, setInput] = useState('')

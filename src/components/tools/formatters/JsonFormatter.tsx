@@ -6,176 +6,27 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { Download } from "@/components/ui/Download";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
-
+import { 
+  processJson, 
+  minifyJson, 
+  clearAll, 
+  syntaxHighlightJson,
+  parseCurl,
+  type JsonValue,
+  type JsonObject,
+  type JsonStats,
+  type JsonError,
+  type ParsedCurl,
+} from "@/lib/formatter/json";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;
-type JsonObject = { [key: string]: JsonValue };
 
-interface JsonStats {
-  totalKeys: number;
-  maxDepth: number;
-  arrayCount: number;
-  objectCount: number;
-  stringCount: number;
-  numberCount: number;
-  booleanCount: number;
-  nullCount: number;
-}
+// ─── Component Types ───────────────────────────────────────────────────────────
 
-interface JsonError {
-  message: string;
-  causeLine: number;
-  causeCol: number;
-  causeExcerpt: string;
-  reportedLine: number | null;
-  reportedCol: number | null;
-}
-
-function findBracketErrorLine(
-  raw: string
-): { line: number; excerpt: string } | null {
-  const lines = raw.split('\n')
-  const stack: { ch: string; pos: number; line: number; indent: number }[] = []
-  let inString = false
-  let escape = false
-  let lineNum = 1
-
-  for (let i = 0; i < raw.length; i++) {
-    const ch = raw[i]
-
-    if (ch === '\n') { lineNum++; continue }
-    if (escape)       { escape = false; continue }
-    if (ch === '\\')  { escape = true;  continue }
-    if (inString) { if (ch === '"') inString = false; continue }
-    if (ch === '"')   { inString = true; continue }
-
-    if (ch === '{' || ch === '[') {
-      const lineContent = lines[lineNum - 1] ?? ''
-      const indent = lineContent.match(/^(\s*)/)?.[1].length ?? 0
-      stack.push({ ch, pos: i, line: lineNum, indent })
-
-    } else if ((ch === '}' || ch === ']') && stack.length > 0) {
-      const lineContent = lines[lineNum - 1] ?? ''
-      const closerIndent = lineContent.match(/^(\s*)/)?.[1].length ?? 0
-      const top = stack[stack.length - 1]
-
-      // Closer is shallower than the opener on the stack
-      // → the opener was never closed; it is the root cause
-      if (closerIndent < top.indent) {
-        return { line: top.line, excerpt: lines[top.line - 1] ?? '' }
-      }
-
-      // Extra closing bracket with nothing on the stack would appear below,
-      // but we already guard with `stack.length > 0` above. Handle it:
-      stack.pop()
-
-    } else if ((ch === '}' || ch === ']') && stack.length === 0) {
-      // Unexpected closer — this line itself is the problem
-      return { line: lineNum, excerpt: lines[lineNum - 1] ?? '' }
-    }
-  }
-
-  // Anything left unclosed — report the innermost one
-  if (stack.length > 0) {
-    const unclosed = stack[stack.length - 1]
-    return { line: unclosed.line, excerpt: lines[unclosed.line - 1] ?? '' }
-  }
-
-  return null // brackets are balanced; error is something else (value, comma, etc.)
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-function analyseJsonError(raw: string, parseError: any): JsonError {
-  const msg: string = parseError?.message ?? 'Invalid JSON'
-
-  // Extract what the parser itself reported
-  let reportedLine: number | null = null
-  let reportedCol: number | null = null
-
-  // Chrome/Node modern: "… at position 553 (line 23 column 4)"
-  const chromeFull = msg.match(/at position \d+\s*\(line (\d+) column (\d+)\)/i)
-  if (chromeFull) {
-    reportedLine = parseInt(chromeFull[1], 10)
-    reportedCol  = parseInt(chromeFull[2], 10)
-  }
-
-  // Chrome/Node older: "… at position 47"
-  if (!reportedLine) {
-    const posOnly = msg.match(/at position (\d+)/i)
-    if (posOnly) {
-      const pos = parseInt(posOnly[1], 10)
-      const before = raw.substring(0, pos)
-      const bLines = before.split('\n')
-      reportedLine = bLines.length
-      reportedCol  = bLines[bLines.length - 1].length + 1
-    }
-  }
-
-  // Firefox: "… at line N column N"
-  if (!reportedLine) {
-    const ff = msg.match(/at line (\d+) column (\d+)/i)
-    if (ff) { reportedLine = parseInt(ff[1], 10); reportedCol = parseInt(ff[2], 10) }
-  }
-
-  // Try to find the bracket root cause first
-  const bracketError = findBracketErrorLine(raw)
-
-  if (bracketError) {
-    return {
-      message: msg,
-      causeLine:    bracketError.line,
-      causeCol:     1,
-      causeExcerpt: bracketError.excerpt,
-      reportedLine,
-      reportedCol,
-    }
-  }
-
-  // Fallback: use the parser's reported position (accurate for non-bracket errors)
-  const fallbackLine = reportedLine ?? 1
-  const fallbackCol  = reportedCol  ?? 1
-  return {
-    message: msg,
-    causeLine:    fallbackLine,
-    causeCol:     fallbackCol,
-    causeExcerpt: raw.split('\n')[fallbackLine - 1] ?? '',
-    reportedLine,
-    reportedCol,
-  }
-}
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-function computeStats(obj: JsonValue, depth = 0, stats: JsonStats = {
-  totalKeys: 0, maxDepth: 0, arrayCount: 0, objectCount: 0,
-  stringCount: 0, numberCount: 0, booleanCount: 0, nullCount: 0
-}): JsonStats {
-  stats.maxDepth = Math.max(stats.maxDepth, depth)
-  if (Array.isArray(obj)) {
-    stats.arrayCount++
-    obj.forEach(item => computeStats(item, depth + 1, stats))
-  } else if (obj !== null && typeof obj === 'object') {
-    stats.objectCount++
-    Object.keys(obj as JsonObject).forEach(k => { stats.totalKeys++; computeStats((obj as JsonObject)[k], depth + 1, stats) })
-  } else if (typeof obj === 'string')  stats.stringCount++
-  else if (typeof obj === 'number')    stats.numberCount++
-  else if (typeof obj === 'boolean')   stats.booleanCount++
-  else if (obj === null)               stats.nullCount++
-  return stats
-}
-
-// ─── Syntax Highlighting ──────────────────────────────────────────────────────
+type ViewMode = 'tree' | 'highlighted'
 
 function SyntaxHighlightedJson({ json }: { json: string }) {
-  const highlighted = json
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/("((?:[^"\\]|\\.)*)")\s*:/g, (_, full) => `<span class="json-key">${full}</span>:`)
-    .replace(/:\s*("(?:[^"\\]|\\\\)*")/g, (_, val) => `: <span class="json-string">${val}</span>`)
-    .replace(/:\s*(-?\d+\.?\d*(?:[eE][+-]?\d+)?)/g, `: <span class="json-number">$1</span>`)
-    .replace(/:\s*(true|false)/g, `: <span class="json-boolean">$1</span>`)
-    .replace(/:\s*(null)/g, `: <span class="json-null">$1</span>`)
+  const highlighted = syntaxHighlightJson(json)
   return (
     <div
       className="w-full h-full font-mono text-sm leading-relaxed p-4 overflow-auto whitespace-pre syntax-output"
@@ -183,8 +34,6 @@ function SyntaxHighlightedJson({ json }: { json: string }) {
     />
   );
 }
-
-// ─── Tree View ────────────────────────────────────────────────────────────────
 
 function TreeNodeRow({ nodeKey, value, depth }: {
   nodeKey: string | number; value: JsonValue; depth: number
@@ -238,8 +87,6 @@ function TreeView({ data }: { data: JsonValue }) {
   return <div className="font-mono text-sm p-4 text-muted-foreground">{String(data)}</div>
 }
 
-// ─── Stats Panel ──────────────────────────────────────────────────────────────
-
 function StatsPanel({ stats }: { stats: JsonStats }) {
   const items = [
     { label: 'Total Keys', value: stats.totalKeys,    color: 'text-blue-500'   },
@@ -265,34 +112,6 @@ function StatsPanel({ stats }: { stats: JsonStats }) {
     </div>
   )
 }
-
-// ─── Curl Parser ─────────────────────────────────────────────────────────────
-
-interface ParsedCurl { url: string; method: string; headers: Record<string, string>; body: string | null }
-
-function parseCurl(input: string): ParsedCurl | null {
-  const raw = input.trim()
-  if (!raw.startsWith('curl')) return null
-  const n = raw.replace(/\\\s*\n\s*/g, ' ')
-  const result: ParsedCurl = { url: '', method: 'GET', headers: {}, body: null }
-  const urlM = n.match(/curl\s+(?:--\S+\s+(?:'[^']*'|"[^"]*"|\S+)\s+)*['"]?(https?:\/\/[^\s'"]+)['"]?/)
-    || n.match(/['"]?(https?:\/\/[^\s'"]+)['"]?/)
-  if (urlM) result.url = urlM[1]
-  const mM = n.match(/-X\s+(\w+)|--request\s+(\w+)/i)
-  if (mM) result.method = (mM[1] || mM[2]).toUpperCase()
-  const hRe = /(?:-H|--header)\s+['"]([^'"]+)['"]/g; let hm
-  while ((hm = hRe.exec(n)) !== null) {
-    const ci = hm[1].indexOf(':')
-    if (ci > -1) result.headers[hm[1].slice(0, ci).trim()] = hm[1].slice(ci + 1).trim()
-  }
-  const bm = n.match(/(?:-d|--data|--data-raw|--data-binary)\s+['"]([\s\S]*?)['"]\s*(?:--|$|-[A-Za-z]|$)/)
-    || n.match(/(?:-d|--data|--data-raw|--data-binary)\s+'([\s\S]*?)'\s*$/)
-  if (bm) result.body = bm[1]
-  if (result.body && !mM) result.method = 'POST'
-  return result.url ? result : null
-}
-
-// ─── URL Fetch Modal ──────────────────────────────────────────────────────────
 
 function UrlFetchModal({ onFetch, onClose }: { onFetch: (json: string) => void; onClose: () => void }) {
   const [input, setInput] = useState('')
@@ -342,8 +161,6 @@ function UrlFetchModal({ onFetch, onClose }: { onFetch: (json: string) => void; 
   )
 }
 
-// ─── Undo/Redo Hook ───────────────────────────────────────────────────────────
-
 function useHistory(initial: string) {
   const [history, setHistory] = useState<string[]>([initial])
   const [index, setIndex] = useState(0)
@@ -382,8 +199,6 @@ function useHistory(initial: string) {
     canRedo: index < history.length - 1,
   }
 }
-
-// ─── Error Panel ──────────────────────────────────────────────────────────────
 
 function ErrorPanel({ error }: { error: JsonError }) {
   const { causeLine, causeCol, causeExcerpt, reportedLine, reportedCol, message } = error
@@ -425,8 +240,6 @@ function ErrorPanel({ error }: { error: JsonError }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-type ViewMode = 'tree' | 'highlighted'
-
 export function JsonFormatter() {
   const inputHistory = useHistory('')
   const [input, setInputRaw] = useState('')
@@ -459,46 +272,44 @@ export function JsonFormatter() {
     if (shared) { try { const d = decodeURIComponent(atob(shared)); setInputRaw(d); inputHistory.push(d) } catch {} }
   }, [])
 
-  const processJson = (raw: string, indent = 2) => {
-    try {
-      if (!raw.trim()) {
-        // Clear everything for empty input without showing an error
-        setOutput('')
-        setJsonError(null)
-        setStats(null)
-        setParsedData(null)
-        setIsMinified(false)
-        return true
-      }
-      const parsed = JSON.parse(raw)
-      setOutput(JSON.stringify(parsed, null, indent))
-      setJsonError(null)
-      setStats(computeStats(parsed))
-      setParsedData(parsed)
-      setIsMinified(false)
-      return true
-    } catch (err: any) {
-      setJsonError(analyseJsonError(raw, err))
-      setOutput(''); setStats(null); setParsedData(null); setIsMinified(false)
-      return false
+  const handleProcessJson = (raw: string, indent = 2) => {
+    const result = processJson(raw, indent)
+    if (result.success) {
+      setOutput(result.output)
+      setJsonError(result.error)
+      setStats(result.stats)
+      setParsedData(result.parsedData)
+      setIsMinified(result.isMinified)
+    } else {
+      setOutput(result.output)
+      setJsonError(result.error)
+      setStats(result.stats)
+      setParsedData(result.parsedData)
+      setIsMinified(result.isMinified)
     }
+    return result.success
   }
 
-  const minifyJson = () => {
-    try {
-      const parsed = JSON.parse(input)
-      setOutput(JSON.stringify(parsed))
-      setJsonError(null); setStats(computeStats(parsed)); setParsedData(parsed)
-      setIsMinified(true)
+  const handleMinifyJson = () => {
+    const result = minifyJson(input)
+    setOutput(result.output)
+    setJsonError(result.error)
+    setStats(result.stats)
+    setParsedData(result.parsedData)
+    setIsMinified(result.isMinified)
+    if (result.success) {
       setViewMode('highlighted')
-    } catch (err: any) {
-      setJsonError(analyseJsonError(input, err))
-      setOutput(''); setStats(null); setParsedData(null); setIsMinified(false)
     }
   }
 
-  const clearAll = () => {
-    setInputRaw(''); setOutput(''); setJsonError(null); setStats(null); setParsedData(null); setIsMinified(false)
+  const handleClearAll = () => {
+    const result = clearAll()
+    setInputRaw(result.input)
+    setOutput(result.output)
+    setJsonError(result.error)
+    setStats(result.stats)
+    setParsedData(result.parsedData)
+    setIsMinified(result.isMinified)
   }
 
   const viewTabs: { id: ViewMode; label: string }[] = [
@@ -533,11 +344,11 @@ export function JsonFormatter() {
 
           <div className="flex gap-2 mb-6">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => processJson(input, 2)} className="shadow-sm hover:shadow-md transition-all duration-200 bg-primary hover:bg-primary/90 flex-1 sm:flex-none">
+              <Button onClick={() => handleProcessJson(input, 2)} className="shadow-sm hover:shadow-md transition-all duration-200 bg-primary hover:bg-primary/90 flex-1 sm:flex-none">
                 <span className="mr-2 hidden sm:inline">✨</span>Format JSON
               </Button>
               {viewMode !== 'tree' && (
-                <Button variant="outline" onClick={minifyJson} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-primary/50 flex-1 sm:flex-none">
+                <Button variant="outline" onClick={handleMinifyJson} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-primary/50 flex-1 sm:flex-none">
                   <span className="mr-2 hidden sm:inline">📦</span>Minify
                 </Button>
               )}
@@ -546,7 +357,7 @@ export function JsonFormatter() {
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3 sm:ml-auto">
-              <Button variant="outline" onClick={clearAll} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-destructive/50 text-destructive hover:bg-destructive/5 flex-1 sm:flex-none">
+              <Button variant="outline" onClick={handleClearAll} className="shadow-sm hover:shadow-md transition-all duration-200 border-2 hover:border-destructive/50 text-destructive hover:bg-destructive/5 flex-1 sm:flex-none">
                 <span className="mr-2 hidden sm:inline">🗑️</span>Clear
               </Button>
             </div>

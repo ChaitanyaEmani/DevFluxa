@@ -2,41 +2,13 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-/** Returns true when v is an integer string in [0, 255] */
-const isValidChannel = (v: string): boolean => {
-  if (!v.trim()) return false
-  if (v.includes('.')) return false
-  const n = Number(v)
-  return Number.isInteger(n) && n >= 0 && n <= 255
-}
-
-/** rgb channels → "#rrggbb" */
-const channelsToHex = (r: number, g: number, b: number): string =>
-  `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-
-/** "#rgb" | "#rrggbb" → { r, g, b } or null */
-const parseHex = (raw: string): { r: number; g: number; b: number } | null => {
-  const clean = raw.replace(/^#/, '').trim()
-  if (!/^[0-9A-Fa-f]+$/.test(clean)) return null
-  if (clean.length === 3) {
-    return {
-      r: parseInt(clean[0] + clean[0], 16),
-      g: parseInt(clean[1] + clean[1], 16),
-      b: parseInt(clean[2] + clean[2], 16),
-    }
-  }
-  if (clean.length === 6) {
-    return {
-      r: parseInt(clean.slice(0, 2), 16),
-      g: parseInt(clean.slice(2, 4), 16),
-      b: parseInt(clean.slice(4, 6), 16),
-    }
-  }
-  return null
-}
+import {
+  isValidChannel,
+  channelsToHex,
+  parseHex,
+  validateHexInput,
+  validateRgbChannel
+} from '@/lib/converters/color'
 
 // ─── component ───────────────────────────────────────────────────────────────
 
@@ -80,23 +52,15 @@ export function RgbToHex() {
     setRgb((prev) => ({ ...prev, [channel]: value }))
     
     // Real-time validation
-    const next = { ...rgb, [channel]: value }
-    if (value.trim() && !isValidChannel(value)) {
-      if (value.includes('.')) {
-        setError('RGB values must be integers — no decimals allowed.')
-      } else {
-        const num = Number(value)
-        if (num < 0 || num > 255) {
-          setError('RGB values must each be between 0 and 255.')
-        } else {
-          setError('RGB values must be valid whole numbers.')
-        }
-      }
+    const validation = validateRgbChannel(value)
+    if (!validation.isValid && value.trim()) {
+      setError(validation.error!)
     } else {
       setError('')
     }
     
     // Keep hex field in sync only when all three channels are valid
+    const next = { ...rgb, [channel]: value }
     if (isValidChannel(next.r) && isValidChannel(next.g) && isValidChannel(next.b)) {
       setHex(channelsToHex(Number(next.r), Number(next.g), Number(next.b)))
     }
@@ -106,15 +70,9 @@ export function RgbToHex() {
     setHex(value)
     
     // Real-time validation
-    if (value.trim()) {
-      const clean = value.replace(/^#/, '').trim()
-      if (clean.length !== 3 && clean.length !== 6) {
-        setError('Invalid hex format — expected 3 or 6 hexadecimal characters.')
-      } else if (!/^[0-9A-Fa-f]+$/.test(clean)) {
-        setError('Invalid hex characters — only 0–9 and A–F are allowed.')
-      } else {
-        setError('')
-      }
+    const validation = validateHexInput(value)
+    if (!validation.isValid) {
+      setError(validation.error!)
     } else {
       setError('')
     }

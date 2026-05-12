@@ -4,36 +4,18 @@ import { useState } from "react"
 import { CopyButton } from "@/components/ui/CopyButton"
 import { Button } from "@/components/ui/Button"
 import { Header } from "@/components/ui/Header"
+import {
+  generateUUID,
+  generateBulkUUIDs,
+  copyToClipboard,
+  downloadAsFile,
+  validateBulkCount,
+  UUIDVersion
+} from "@/lib/generators/uuid"
 
-function generateUUID(version: 'v1' | 'v4'): string {
-  if (version === 'v4') {
-    // Generate UUID v4 (random)
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0
-      const v = c === 'x' ? r : (r & 0x3 | 0x8)
-      return v.toString(16)
-    })
-  } else {
-    // Generate UUID v1 (timestamp-based)
-    const timestamp = Date.now()
-    const random = Math.random().toString(36).substring(2, 15)
-    const random2 = Math.random().toString(36).substring(2, 15)
-    
-    // Simple v1-like UUID (not fully RFC compliant but good for demo)
-    return `${timestamp.toString(16).padStart(12, '0')}-${random.substring(0, 4)}-1${random.substring(4, 7)}-${random2.substring(0, 4)}-${random2.substring(4, 16)}`
-  }
-}
-
-function generateBulkUUIDs(version: 'v1' | 'v4', count: number): string[] {
-  const uuids: string[] = []
-  for (let i = 0; i < count; i++) {
-    uuids.push(generateUUID(version))
-  }
-  return uuids
-}
 
 export function UuidGenerator() {
-  const [version, setVersion] = useState<'v1' | 'v4'>('v4')
+  const [version, setVersion] = useState<UUIDVersion>('v4')
   const [uuids, setUuids] = useState<string[]>([])
   const [bulkCount, setBulkCount] = useState(5)
 
@@ -51,24 +33,14 @@ export function UuidGenerator() {
     setUuids([])
   }
 
-  const copyAll = () => {
+  const copyAll = async () => {
     const text = uuids.join('\n')
-    navigator.clipboard.writeText(text).then(() => {
-      // Could add a toast notification here
-    })
+    await copyToClipboard(text)
   }
 
-  const downloadAsFile = () => {
+  const downloadAsFileHandler = () => {
     const text = uuids.join('\n')
-    const blob = new Blob([text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `uuids-${version}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadAsFile(text, `uuids-${version}.txt`)
   }
 
   return (
@@ -94,7 +66,7 @@ export function UuidGenerator() {
               <label className="text-sm font-medium">Version:</label>
               <select 
                 value={version} 
-                onChange={(e) => setVersion(e.target.value as 'v1' | 'v4')}
+                onChange={(e) => setVersion(e.target.value as UUIDVersion)}
                 className="px-3 py-1 border border-border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="v4">UUID v4 (Random)</option>
@@ -108,7 +80,7 @@ export function UuidGenerator() {
                 min="1"
                 max="100"
                 value={bulkCount}
-                onChange={(e) => setBulkCount(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
+                onChange={(e) => setBulkCount(validateBulkCount(e.target.value))}
                 className="w-16 px-2 py-1 border border-border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -144,7 +116,7 @@ export function UuidGenerator() {
                     <Button variant="outline" onClick={copyAll} size="sm">
                       <span className="mr-1">📋</span>Copy All
                     </Button>
-                    <Button variant="outline" onClick={downloadAsFile} size="sm">
+                    <Button variant="outline" onClick={downloadAsFileHandler} size="sm">
                       <span className="mr-1">💾</span>Download
                     </Button>
                   </>

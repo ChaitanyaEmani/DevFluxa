@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
+import {
+  toDateTimeLocalValue,
+  toDisplayString,
+  convertUnixToDateTimeLocal,
+  convertDateTimeLocalToUnix,
+  getCurrentUnixTimestamp,
+  getCurrentDateTimeLocal,
+  validateUnixTimestamp,
+  validateDateTimeLocal
+} from '@/lib/converters/timestamp'
 
 export function TimestampConverter() {
   const [unixTimestamp, setUnixTimestamp] = useState('')
@@ -17,79 +27,43 @@ export function TimestampConverter() {
     return () => clearInterval(timer)
   }, [])
 
-  // Format a Date → "YYYY-MM-DDTHH:mm" (value expected by datetime-local input)
-  const toDateTimeLocalValue = (date: Date): string => {
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return (
-      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-      `T${pad(date.getHours())}:${pad(date.getMinutes())}`
-    )
-  }
-
-  // Display label: "YYYY-MM-DD HH:mm:ss" in local time
-  const toDisplayString = (date: Date): string => {
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return (
-      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-      `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-    )
-  }
-
   const convertToDateTime = () => {
     setError('')
-    const raw = unixTimestamp.trim()
-
-    if (!raw) {
-      setError('Please enter a Unix timestamp.')
+    const validation = validateUnixTimestamp(unixTimestamp)
+    
+    if (!validation.isValid) {
+      setError(validation.error!)
       return
     }
 
-    const timestamp = Number(raw)
-    if (!Number.isFinite(timestamp) || raw === '') {
-      setError('Invalid timestamp: must be a number.')
-      return
+    const dateTimeLocalValue = convertUnixToDateTimeLocal(unixTimestamp)
+    if (dateTimeLocalValue) {
+      setDateTimeLocal(dateTimeLocalValue)
     }
-
-    const minTimestamp = -2208988800 // Year 1900
-    const maxTimestamp = 253402300799 // Year 9999
-    if (timestamp < minTimestamp || timestamp > maxTimestamp) {
-      setError(`Timestamp out of valid range (${minTimestamp} to ${maxTimestamp}).`)
-      return
-    }
-
-    const date = new Date(timestamp * 1000)
-    if (isNaN(date.getTime())) {
-      setError('Invalid timestamp: cannot convert to date.')
-      return
-    }
-
-    setDateTimeLocal(toDateTimeLocalValue(date))
   }
 
   const convertToTimestamp = () => {
     setError('')
-    if (!dateTimeLocal) {
-      setError('Please select a date and time first.')
+    const validation = validateDateTimeLocal(dateTimeLocal)
+    
+    if (!validation.isValid) {
+      setError(validation.error!)
       return
     }
 
-    // datetime-local value is treated as local time by the Date constructor
-    const date = new Date(dateTimeLocal)
-    if (isNaN(date.getTime())) {
-      setError('Invalid date: please use the date picker to select a valid date.')
-      return
+    const timestamp = convertDateTimeLocalToUnix(dateTimeLocal)
+    if (timestamp) {
+      setUnixTimestamp(timestamp)
     }
-
-    const timestamp = Math.floor(date.getTime() / 1000)
-    setUnixTimestamp(timestamp.toString())
   }
 
   const getCurrentTimestamp = () => {
     setError('')
-    const now = new Date()
-    const timestamp = Math.floor(now.getTime() / 1000)
-    setUnixTimestamp(timestamp.toString())
-    setDateTimeLocal(toDateTimeLocalValue(now))
+    const timestamp = getCurrentUnixTimestamp()
+    const dateTimeLocalValue = getCurrentDateTimeLocal()
+    
+    setUnixTimestamp(timestamp)
+    setDateTimeLocal(dateTimeLocalValue)
   }
 
   const clearAll = () => {

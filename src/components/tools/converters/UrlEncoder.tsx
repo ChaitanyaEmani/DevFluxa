@@ -6,6 +6,7 @@ import { TextareaOutput } from '@/components/ui/TextareaOutput'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Download } from '@/components/ui/Download'
 import { Button } from '@/components/ui/Button'
+import { encodeUrl, decodeUrl } from '@/lib/converters/url'
 
 export function UrlEncoder() {
   const [input, setInput] = useState('')
@@ -13,21 +14,6 @@ export function UrlEncoder() {
   const [mode, setMode] = useState<'encode' | 'decode'>('encode')
   const [error, setError] = useState('')
 
-  const encodeUrl = (str: string) => {
-    try {
-      return encodeURIComponent(str)
-    } catch (err) {
-      throw new Error('Failed to encode URL')
-    }
-  }
-
-  const decodeUrl = (str: string) => {
-    try {
-      return decodeURIComponent(str)
-    } catch (err) {
-      throw new Error('Failed to decode URL - invalid URL encoding')
-    }
-  }
 
   const process = () => {
     try {

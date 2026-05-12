@@ -4,122 +4,37 @@ import { useState, useEffect } from "react"
 import { CopyButton } from "@/components/ui/CopyButton"
 import { Button } from "@/components/ui/Button"
 import { Header } from "@/components/ui/Header"
+import {
+  HashResult,
+  hashAlgorithms,
+  sampleTexts,
+  generateHashes,
+  getTextStatistics,
+  getDefaultSelectedAlgorithms
+} from "@/lib/generators/hash"
 
-interface HashResult {
-  algorithm: string
-  hash: string
-  processingTime: number
-}
 
 export function HashGenerator() {
   const [inputText, setInputText] = useState("")
   const [hashes, setHashes] = useState<HashResult[]>([])
-  const [selectedAlgorithms, setSelectedAlgorithms] = useState({
-    md5: true,
-    sha1: true,
-    sha256: true,
-    sha512: false
-  })
+  const [selectedAlgorithms, setSelectedAlgorithms] = useState(getDefaultSelectedAlgorithms())
 
-  const algorithms = {
-    md5: { name: "MD5", description: "128-bit hash, fast but not cryptographically secure" },
-    sha1: { name: "SHA-1", description: "160-bit hash, deprecated for security purposes" },
-    sha256: { name: "SHA-256", description: "256-bit hash, widely used and secure" },
-    sha512: { name: "SHA-512", description: "512-bit hash, most secure variant" }
-  }
 
-  const generateHashes = async () => {
-    if (!inputText.trim()) {
-      setHashes([])
-      return
-    }
-
-    const results: HashResult[] = []
-
-    for (const [key, algorithm] of Object.entries(algorithms)) {
-      if (selectedAlgorithms[key as keyof typeof selectedAlgorithms]) {
-        const startTime = performance.now()
-        let hash = ""
-
-        try {
-          // Use Web Crypto API for modern browsers
-          const encoder = new TextEncoder()
-          const data = encoder.encode(inputText)
-
-          switch (key) {
-            case 'sha256':
-              const hashBuffer256 = await crypto.subtle.digest('SHA-256', data)
-              hash = bufferToHex(hashBuffer256)
-              break
-            case 'sha512':
-              const hashBuffer512 = await crypto.subtle.digest('SHA-512', data)
-              hash = bufferToHex(hashBuffer512)
-              break
-            case 'sha1':
-              const hashBuffer1 = await crypto.subtle.digest('SHA-1', data)
-              hash = bufferToHex(hashBuffer1)
-              break
-            case 'md5':
-              // MD5 is not supported by Web Crypto API, use a simple implementation
-              hash = await md5(inputText)
-              break
-          }
-        } catch (error) {
-          hash = "Error generating hash"
-        }
-
-        const endTime = performance.now()
-        
-        results.push({
-          algorithm: algorithm.name,
-          hash,
-          processingTime: endTime - startTime
-        })
-      }
-    }
-
+  const handleGenerateHashes = async () => {
+    const results = await generateHashes(inputText, selectedAlgorithms)
     setHashes(results)
   }
 
-  const bufferToHex = (buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer)
-    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
-  }
-
-  // Simple MD5 implementation (for demonstration - not production ready)
-  const md5 = async (message: string): Promise<string> => {
-    // Convert string to bytes
-    const msgBuffer = new TextEncoder().encode(message)
-    
-    // Use Web Crypto API with MD5 if available, otherwise fallback
-    try {
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      // Truncate SHA-256 to simulate MD5 length (this is just for demo)
-      return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
-    } catch {
-      // Fallback - return a placeholder
-      return "md5-not-available-in-this-environment"
-    }
-  }
-
   useEffect(() => {
-    generateHashes()
+    handleGenerateHashes()
   }, [inputText, selectedAlgorithms])
 
-  const handleAlgorithmToggle = (algorithm: keyof typeof selectedAlgorithms) => {
+  const handleAlgorithmToggle = (algorithm: string) => {
     setSelectedAlgorithms(prev => ({
       ...prev,
       [algorithm]: !prev[algorithm]
     }))
   }
-
-  const sampleTexts = [
-    { name: "Hello World", text: "Hello World" },
-    { name: "Email Test", text: "user@example.com" },
-    { name: "Password", text: "MySecurePassword123!" },
-    { name: "JSON", text: '{"name": "John", "age": 30}' }
-  ]
 
   const clearAll = () => {
     setInputText("")
@@ -173,7 +88,7 @@ export function HashGenerator() {
             />
 
             <div className="flex gap-2 mt-4">
-              <Button onClick={generateHashes} size="sm">
+              <Button onClick={handleGenerateHashes} size="sm">
                 Generate Hashes
               </Button>
               <Button onClick={clearAll} variant="outline" size="sm">
@@ -186,12 +101,12 @@ export function HashGenerator() {
           <div className="bg-card border rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Hash Algorithms</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(algorithms).map(([key, algorithm]) => (
+              {Object.entries(hashAlgorithms).map(([key, algorithm]) => (
                 <label key={key} className="flex items-start gap-3 cursor-pointer p-3 border rounded-lg hover:bg-muted/50">
                   <input
                     type="checkbox"
-                    checked={selectedAlgorithms[key as keyof typeof selectedAlgorithms]}
-                    onChange={() => handleAlgorithmToggle(key as keyof typeof selectedAlgorithms)}
+                    checked={selectedAlgorithms[key]}
+                    onChange={() => handleAlgorithmToggle(key)}
                     className="rounded border-gray-300 mt-1"
                   />
                   <div>
@@ -273,33 +188,32 @@ export function HashGenerator() {
           </div>
 
           {/* Quick Stats */}
-          {inputText && (
-            <div className="bg-card border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">Input Statistics</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{inputText.length}</div>
-                  <div className="text-sm text-muted-foreground">Characters</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">
-                    {inputText.split(/\s+/).filter(w => w.length > 0).length}
+          {inputText && (() => {
+            const stats = getTextStatistics(inputText, hashes.length)
+            return (
+              <div className="bg-card border rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Input Statistics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.characters}</div>
+                    <div className="text-sm text-muted-foreground">Characters</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">Words</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">
-                    {new TextEncoder().encode(inputText).length}
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.words}</div>
+                    <div className="text-sm text-muted-foreground">Words</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">Bytes</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{hashes.length}</div>
-                  <div className="text-sm text-muted-foreground">Hashes</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.bytes}</div>
+                    <div className="text-sm text-muted-foreground">Bytes</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{stats.hashes}</div>
+                    <div className="text-sm text-muted-foreground">Hashes</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
       </div>
     </div>

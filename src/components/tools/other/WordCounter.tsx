@@ -1,80 +1,23 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { CopyButton } from "@/components/ui/CopyButton"
 import { Button } from "@/components/ui/Button"
 import { Header } from "@/components/ui/Header"
+import {
+  sampleTexts,
+  calculateTextStats,
+  calculateDetailedAnalysis,
+  getComplexityColor,
+  transformText
+} from "@/lib/generators/wordCounter"
 
-interface TextStats {
-  words: number
-  characters: number
-  charactersNoSpaces: number
-  sentences: number
-  paragraphs: number
-  readingTime: number
-  speakingTime: number
-}
 
 export function WordCounter() {
   const [text, setText] = useState("")
 
-  const stats = useMemo((): TextStats => {
-    if (!text.trim()) {
-      return {
-        words: 0,
-        characters: 0,
-        charactersNoSpaces: 0,
-        sentences: 0,
-        paragraphs: 0,
-        readingTime: 0,
-        speakingTime: 0
-      }
-    }
-
-    // Count words (splits by whitespace and filters out empty strings)
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0).length
-
-    // Count characters
-    const characters = text.length
-    const charactersNoSpaces = text.replace(/\s/g, '').length
-
-    // Count sentences (ends with . ! ?)
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
-
-    // Count paragraphs (double newlines)
-    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length
-
-    // Reading time (average 200 words per minute)
-    const readingTime = Math.ceil(words / 200)
-
-    // Speaking time (average 130 words per minute)
-    const speakingTime = Math.ceil(words / 130)
-
-    return {
-      words,
-      characters,
-      charactersNoSpaces,
-      sentences,
-      paragraphs,
-      readingTime,
-      speakingTime
-    }
-  }, [text])
-
-  const sampleTexts = [
-    {
-      name: "Lorem Ipsum",
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
-    },
-    {
-      name: "Sample Paragraph",
-      text: "The quick brown fox jumps over the lazy dog. This pangram sentence contains every letter of the alphabet at least once. It's commonly used for testing typewriters and computer keyboards."
-    },
-    {
-      name: "Technical Text",
-      text: "React is a JavaScript library for building user interfaces. It allows developers to create reusable UI components and manage application state efficiently. React uses a virtual DOM to optimize rendering performance."
-    }
-  ]
+  const stats = useMemo(() => calculateTextStats(text), [text])
+  const detailedAnalysis = useMemo(() => calculateDetailedAnalysis(stats), [stats])
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,40 +113,28 @@ export function WordCounter() {
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm font-medium">Average Words per Sentence</span>
                   <span className="text-sm text-muted-foreground">
-                    {stats.sentences > 0 ? (stats.words / stats.sentences).toFixed(1) : '0'}
+                    {detailedAnalysis.averageWordsPerSentence.toFixed(1)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm font-medium">Average Characters per Word</span>
                   <span className="text-sm text-muted-foreground">
-                    {stats.words > 0 ? (stats.charactersNoSpaces / stats.words).toFixed(1) : '0'}
+                    {detailedAnalysis.averageCharactersPerWord.toFixed(1)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm font-medium">Average Sentences per Paragraph</span>
                   <span className="text-sm text-muted-foreground">
-                    {stats.paragraphs > 0 ? (stats.sentences / stats.paragraphs).toFixed(1) : '0'}
+                    {detailedAnalysis.averageSentencesPerParagraph.toFixed(1)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2">
                   <span className="text-sm font-medium">Text Complexity</span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    stats.words / stats.sentences > 20 
-                      ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-                      : stats.words / stats.sentences > 15
-                      ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300'
-                      : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
-                  }`}>
-                    {stats.sentences > 0 && (
-                      stats.words / stats.sentences > 20 
-                        ? 'Complex'
-                        : stats.words / stats.sentences > 15
-                        ? 'Moderate'
-                        : 'Simple'
-                    )}
+                  <span className={`px-2 py-1 text-xs rounded-full ${getComplexityColor(detailedAnalysis.complexity)}`}>
+                    {detailedAnalysis.complexity}
                   </span>
                 </div>
               </div>
@@ -218,28 +149,28 @@ export function WordCounter() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setText(text.toUpperCase())}
+                  onClick={() => setText(transformText(text, 'uppercase'))}
                 >
                   UPPERCASE
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setText(text.toLowerCase())}
+                  onClick={() => setText(transformText(text, 'lowercase'))}
                 >
                   lowercase
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setText(text.replace(/\s+/g, ' ').trim())}
+                  onClick={() => setText(transformText(text, 'removeExtraSpaces'))}
                 >
                   Remove Extra Spaces
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setText('')}
+                  onClick={() => setText(transformText(text, 'clear'))}
                 >
                   Clear Text
                 </Button>

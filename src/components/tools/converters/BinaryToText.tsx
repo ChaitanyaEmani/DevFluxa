@@ -6,36 +6,8 @@ import { CopyButton } from "@/components/ui/CopyButton"
 import { Download } from "@/components/ui/Download"
 import { Button } from "@/components/ui/Button"
 import { Header } from "@/components/ui/Header"
+import { binaryToText, validateBinary } from "@/lib/converters/binary"
 
-function binaryToText(binary: string, options: {
-  separator?: string
-  encoding?: 'utf8' | 'ascii'
-} = {}): string {
-  const { separator = ' ', encoding = 'utf8' } = options
-  
-  if (!binary) return ''
-  
-  try {
-    return binary
-      .split(separator)
-      .filter(bits => bits.trim()) // Remove empty strings
-      .map(bits => {
-        const code = parseInt(bits, 2)
-        if (isNaN(code)) throw new Error(`Invalid binary sequence: ${bits}`)
-        return String.fromCharCode(code)
-      })
-      .join('')
-  } catch (error) {
-    throw new Error('Failed to convert binary to text')
-  }
-}
-
-function validateBinary(binary: string, separator: string): boolean {
-  if (!binary) return true
-  
-  const parts = binary.split(separator).filter(bits => bits.trim())
-  return parts.every(bits => /^[01]+$/.test(bits) && bits.length === 8)
-}
 
 export function BinaryToText() {
   const [input, setInput] = useState('')
