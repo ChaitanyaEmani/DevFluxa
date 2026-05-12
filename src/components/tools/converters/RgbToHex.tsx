@@ -71,75 +71,54 @@ export function RgbToHex() {
         })()
       : null
 
-  // ── converters ────────────────────────────────────────────────────────────
-
-  const rgbToHex = () => {
-    setError('')
-    if (!rgb.r.trim() || !rgb.g.trim() || !rgb.b.trim()) {
-      setError('Please enter all RGB values (R, G, B).')
-      return
-    }
-    if (rgb.r.includes('.') || rgb.g.includes('.') || rgb.b.includes('.')) {
-      setError('RGB values must be integers — no decimals allowed.')
-      return
-    }
-    const r = Number(rgb.r)
-    const g = Number(rgb.g)
-    const b = Number(rgb.b)
-    if (!Number.isInteger(r) || !Number.isInteger(g) || !Number.isInteger(b)) {
-      setError('RGB values must be valid whole numbers.')
-      return
-    }
-    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
-      setError('RGB values must each be between 0 and 255.')
-      return
-    }
-    setHex(channelsToHex(r, g, b))
-  }
-
-  const hexToRgb = () => {
-    setError('')
-    if (!hex.trim()) {
-      setError('Please enter a HEX color value.')
-      return
-    }
-    const clean = hex.replace(/^#/, '').trim()
-    if (clean.length !== 3 && clean.length !== 6) {
-      setError('Invalid hex format — expected 3 or 6 hexadecimal characters.')
-      return
-    }
-    if (!/^[0-9A-Fa-f]+$/.test(clean)) {
-      setError('Invalid hex characters — only 0–9 and A–F are allowed.')
-      return
-    }
-    const parsed = parseHex(hex)
-    if (!parsed) {
-      setError('Could not parse the hex value. Please check your input.')
-      return
-    }
-    // Sync RGB fields AND normalise the hex field to full 6-digit form
-    setRgb({ r: String(parsed.r), g: String(parsed.g), b: String(parsed.b) })
-    setHex(channelsToHex(parsed.r, parsed.g, parsed.b))
-  }
-
   // ── field change handlers (clear error so banner doesn't linger) ──────────
 
   const handleRgbChange = (channel: 'r' | 'g' | 'b', value: string) => {
-    setError('')
     // Reject anything that can't possibly be a valid channel as the user types,
     // but allow empty string and partial numbers (e.g. "-" or "25")
     if (value !== '' && value !== '-' && !/^\d{0,3}$/.test(value)) return
     setRgb((prev) => ({ ...prev, [channel]: value }))
-    // Keep hex field in sync only when all three channels are valid
+    
+    // Real-time validation
     const next = { ...rgb, [channel]: value }
+    if (value.trim() && !isValidChannel(value)) {
+      if (value.includes('.')) {
+        setError('RGB values must be integers — no decimals allowed.')
+      } else {
+        const num = Number(value)
+        if (num < 0 || num > 255) {
+          setError('RGB values must each be between 0 and 255.')
+        } else {
+          setError('RGB values must be valid whole numbers.')
+        }
+      }
+    } else {
+      setError('')
+    }
+    
+    // Keep hex field in sync only when all three channels are valid
     if (isValidChannel(next.r) && isValidChannel(next.g) && isValidChannel(next.b)) {
       setHex(channelsToHex(Number(next.r), Number(next.g), Number(next.b)))
     }
   }
 
   const handleHexChange = (value: string) => {
-    setError('')
     setHex(value)
+    
+    // Real-time validation
+    if (value.trim()) {
+      const clean = value.replace(/^#/, '').trim()
+      if (clean.length !== 3 && clean.length !== 6) {
+        setError('Invalid hex format — expected 3 or 6 hexadecimal characters.')
+      } else if (!/^[0-9A-Fa-f]+$/.test(clean)) {
+        setError('Invalid hex characters — only 0–9 and A–F are allowed.')
+      } else {
+        setError('')
+      }
+    } else {
+      setError('')
+    }
+    
     // Live-sync RGB fields when the hex is already valid while typing
     const parsed = parseHex(value)
     if (parsed) {
@@ -159,7 +138,7 @@ export function RgbToHex() {
     <div className="container py-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">RGB ↔ HEX Converter</h1>
+          <h1 className="text-3xl font-bold mb-4">RGB HEX Converter</h1>
           <p className="text-muted-foreground">
             Convert RGB colors to HEX color codes and vice versa. Perfect for designers and developers.
           </p>
@@ -203,9 +182,6 @@ export function RgbToHex() {
                   </div>
                 ))}
               </div>
-              <Button onClick={rgbToHex} className="w-full">
-                Convert to HEX →
-              </Button>
             </div>
           </div>
 
@@ -220,9 +196,6 @@ export function RgbToHex() {
                 placeholder="#RRGGBB"
                 className="w-full px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono"
               />
-              <Button onClick={hexToRgb} className="w-full">
-                Convert to RGB →
-              </Button>
               {previewHex && (
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="space-y-1 text-sm">
