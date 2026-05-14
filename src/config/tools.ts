@@ -126,16 +126,6 @@ export const tools: Tool[] = [
     path: '/converters/text-to-binary'
   },
   {
-    id: 'binary-to-text',
-    name: 'Binary to Text',
-    description: 'Convert binary code back to readable text',
-    category: 'converter',
-    icon: 'FileText',
-    color: 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300',
-    tag: 'Decoding',
-    path: '/converters/binary-to-text'
-  },
-  {
     id: 'timezone-converter',
     name: 'Timezone Converter',
     description: 'Convert time between different timezones instantly',
@@ -217,14 +207,15 @@ export const tools: Tool[] = [
     path: '/tools/fake-user-data-generator'
   },
   {
-    id: 'cron-expression-generator',
-    name: 'Cron Expression Generator',
-    description: 'Generate and validate cron expressions with visual builder',
+    id: 'javascript-validator',
+    name: 'JavaScript Validator',
+    description: 'Validate JavaScript code for syntax errors, reference errors, and common issues',
     category: 'other',
-    icon: 'Clock',
-    color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300',
-    tag: 'Scheduling',
-    path: '/tools/cron-expression-generator'
+    icon: 'CheckCircle',
+    color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300',
+    tag: 'Code Quality',
+    path: '/tools/javascript-validator',
+    popular: true
   }
 ]
 
