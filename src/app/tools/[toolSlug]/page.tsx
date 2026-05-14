@@ -16,7 +16,8 @@ export async function generateStaticParams() {
     { toolSlug: 'uuid-generator' },
     { toolSlug: 'meta-tag-generator' },
     { toolSlug: 'fake-user-data-generator' },
-    { toolSlug: 'cron-expression-generator' }
+    { toolSlug: 'cron-expression-generator' },
+    { toolSlug: 'javascript-validator' }
   ]
 }
 
@@ -68,8 +69,8 @@ export default async function ToolPage({ params }: ToolPageProps) {
       case 'fake-user-data-generator':
         ToolComponent = (await import('@/components/tools/other/FakeUserDataGenerator')).FakeUserDataGenerator
         break
-      case 'cron-expression-generator':
-        ToolComponent = (await import('@/components/tools/other/CronExpressionGenerator')).CronExpressionGenerator
+      case 'javascript-validator':
+        ToolComponent = (await import('@/components/tools/validators/JavaScriptValidator')).JavaScriptValidator
         break
       default:
         notFound()

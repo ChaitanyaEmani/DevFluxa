@@ -49,7 +49,6 @@ export function Footer() {
               <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
               <li><Link href="/converters/jwt-decoder" className="text-muted-foreground hover:text-foreground transition-colors">JWT Decoder</Link></li>
               <li><Link href="/converters/text-to-binary" className="text-muted-foreground hover:text-foreground transition-colors">Text to Binary</Link></li>
-              <li><Link href="/converters/binary-to-text" className="text-muted-foreground hover:text-foreground transition-colors">Binary to Text</Link></li>
               <li><Link href="/converters/timezone-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timezone Converter</Link></li>
               <li><Link href="/converters/date-difference-calculator" className="text-muted-foreground hover:text-foreground transition-colors">Date Difference Calculator</Link></li>
             </ul>
@@ -64,7 +63,6 @@ export function Footer() {
               <li><Link href="/tools/uuid-generator" className="text-muted-foreground hover:text-foreground transition-colors">UUID Generator</Link></li>
               <li><Link href="/tools/meta-tag-generator" className="text-muted-foreground hover:text-foreground transition-colors">Meta Tag Generator</Link></li>
               <li><Link href="/tools/fake-user-data-generator" className="text-muted-foreground hover:text-foreground transition-colors">Fake User Data Generator</Link></li>
-              <li><Link href="/tools/cron-expression-generator" className="text-muted-foreground hover:text-foreground transition-colors">Cron Expression Generator</Link></li>
             </ul>
           </div>
           

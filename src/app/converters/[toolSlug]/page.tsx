@@ -62,9 +62,6 @@ export default async function ToolPage({ params }: ToolPageProps) {
       case 'text-to-binary':
         ConverterComponent = (await import('@/components/tools/converters/TextToBinary')).TextToBinary
         break
-      case 'binary-to-text':
-        ConverterComponent = (await import('@/components/tools/converters/BinaryToText')).BinaryToText
-        break
       case 'timezone-converter':
         ConverterComponent = (await import('@/components/tools/converters/TimezoneConverter')).TimezoneConverter
         break

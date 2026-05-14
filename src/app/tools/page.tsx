@@ -87,12 +87,6 @@ const tools = [
         features: ['Bidirectional', 'Custom Separators', 'Real-time Conversion', 'Error Detection']
       },
       {
-        name: 'Binary to Text',
-        description: 'Convert binary code back to readable text with validation',
-        href: '/converters/binary-to-text',
-        features: ['Binary Validation', '8-bit Checking', 'Error Messages', 'Copy Results']
-      },
-      {
         name: 'Timezone Converter',
         description: 'Convert time between different timezones instantly',
         href: '/converters/timezone-converter',
@@ -148,10 +142,10 @@ const tools = [
         features: ['Realistic Data', 'Multiple Formats', 'Customizable Count', 'Complete Profiles']
       },
       {
-        name: 'Cron Expression Generator',
-        description: 'Generate and validate cron expressions with visual builder',
-        href: '/tools/cron-expression-generator',
-        features: ['Visual Builder', 'Common Presets', 'Expression Description', 'Advanced Mode']
+        name: 'JavaScript Validator',
+        description: 'Validate JavaScript code for syntax errors, reference errors, and common issues',
+        href: '/tools/javascript-validator',
+        features: ['Syntax Validation', 'Error Detection', 'Best Practices', 'Real-time Analysis']
       }
     ]
   }
