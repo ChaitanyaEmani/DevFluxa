@@ -155,6 +155,175 @@ export function analyseJsonError(raw: string, parseError: any): JsonError {
   }
 }
 
+export interface DuplicateKeyInfo {
+  key: string
+  line: number
+  column: number
+  firstOccurrenceLine: number
+  firstOccurrenceColumn: number
+}
+
+export function findDuplicateJsonKey(raw: string): DuplicateKeyInfo | null {
+  type StackFrame =
+    | { type: 'object'; keys: Map<string, { line: number; column: number }>; expectingKey: boolean }
+    | { type: 'array' }
+
+  const stack: StackFrame[] = []
+  let line = 1
+  let column = 1
+
+  const readString = (startIndex: number) => {
+    let i = startIndex + 1
+    let currentLine = line
+    let currentColumn = column + 1
+    let escaped = false
+    let value = ''
+
+    while (i < raw.length) {
+      const ch = raw[i]
+      if (ch === '\n') {
+        currentLine++
+        currentColumn = 1
+        value += ch
+        i++
+        continue
+      }
+
+      if (escaped) {
+        escaped = false
+        value += ch
+        currentColumn++
+        i++
+        continue
+      }
+
+      if (ch === '\\') {
+        escaped = true
+        currentColumn++
+        i++
+        continue
+      }
+
+      if (ch === '"') {
+        return {
+          value,
+          endIndex: i,
+          line: currentLine,
+          column: currentColumn + 1,
+        }
+      }
+
+      value += ch
+      currentColumn++
+      i++
+    }
+
+    return {
+      value,
+      endIndex: raw.length - 1,
+      line: currentLine,
+      column: currentColumn,
+    }
+  }
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i]
+    if (ch === '\n') {
+      line++
+      column = 1
+      continue
+    }
+
+    if (/\s/.test(ch)) {
+      column++
+      continue
+    }
+
+    if (ch === '"') {
+      const keyStartLine = line
+      const keyStartColumn = column
+      const result = readString(i)
+      const key = result.value
+      i = result.endIndex
+      line = result.line
+      column = result.column
+
+      const top = stack[stack.length - 1]
+      const isKey = top?.type === 'object' && top.expectingKey
+      if (isKey) {
+        const existing = top.keys.get(key)
+        if (existing) {
+          return {
+            key,
+            line: keyStartLine,
+            column: keyStartColumn,
+            firstOccurrenceLine: existing.line,
+            firstOccurrenceColumn: existing.column,
+          }
+        }
+
+        top.keys.set(key, { line: keyStartLine, column: keyStartColumn })
+        top.expectingKey = false
+      }
+
+      continue
+    }
+
+    if (ch === '{') {
+      stack.push({ type: 'object', keys: new Map(), expectingKey: true })
+      column++
+      continue
+    }
+
+    if (ch === '[') {
+      stack.push({ type: 'array' })
+      column++
+      continue
+    }
+
+    if (ch === '}') {
+      stack.pop()
+      column++
+      continue
+    }
+
+    if (ch === ']') {
+      stack.pop()
+      column++
+      continue
+    }
+
+    if (ch === ':') {
+      const top = stack[stack.length - 1]
+      if (top?.type === 'object') top.expectingKey = false
+      column++
+      continue
+    }
+
+    if (ch === ',') {
+      const top = stack[stack.length - 1]
+      if (top?.type === 'object') top.expectingKey = true
+      column++
+      continue
+    }
+
+    column++
+  }
+
+  return null
+}
+
+export function analyseDuplicateKeyError(raw: string, info: DuplicateKeyInfo): JsonError {
+  return {
+    message: `Duplicate key "${info.key}" found at line ${info.line}, column ${info.column}. First occurrence was at line ${info.firstOccurrenceLine}, column ${info.firstOccurrenceColumn}.`,
+    causeLine: info.line,
+    causeCol: info.column,
+    causeExcerpt: raw.split('\n')[info.line - 1] ?? '',
+    reportedLine: null,
+    reportedCol: null,
+  }
+}
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 export function computeStats(obj: JsonValue, depth = 0, stats: JsonStats = {
@@ -234,6 +403,17 @@ export function processJson(raw: string, indent = 2): JsonProcessResult {
       }
     }
     const parsed = JSON.parse(raw);
+    const duplicateKey = findDuplicateJsonKey(raw)
+    if (duplicateKey) {
+      return {
+        success: false,
+        output: '',
+        error: analyseDuplicateKeyError(raw, duplicateKey),
+        stats: null,
+        parsedData: null,
+        isMinified: false,
+      }
+    }
     return {
       success: true,
       output: JSON.stringify(parsed, null, indent),
@@ -257,6 +437,17 @@ export function processJson(raw: string, indent = 2): JsonProcessResult {
 export function minifyJson(input: string): JsonProcessResult {
   try {
     const parsed = JSON.parse(input)
+    const duplicateKey = findDuplicateJsonKey(input)
+    if (duplicateKey) {
+      return {
+        success: false,
+        output: '',
+        error: analyseDuplicateKeyError(input, duplicateKey),
+        stats: null,
+        parsedData: null,
+        isMinified: false,
+      }
+    }
     return {
       success: true,
       output: JSON.stringify(parsed),

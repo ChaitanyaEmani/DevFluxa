@@ -232,7 +232,7 @@ function ErrorPanel({ error }: { error: JsonError }) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Common issues: missing commas, unclosed brackets, trailing commas.
+        Common issues: missing commas, unclosed brackets, duplicate keys, trailing commas.
       </p>
     </div>
   )
@@ -458,6 +458,7 @@ export function JsonFormatter() {
                 { title: 'Syntax Highlighting',  desc: 'Keys, strings, numbers, booleans, and nulls are color-coded for quick scanning.', icon: '🎨' },
                 { title: 'Tree Explorer',         desc: 'Collapsible tree view for navigating large nested JSON structures.', icon: '🌳' },
                 { title: 'Smart Error Detection', desc: 'Finds the unclosed bracket (root cause), not just where the parser gave up.', icon: '🔍' },
+                { title: 'Duplicate Key Detection', desc: 'Detects repeated property names in the same object so you can fix ambiguous JSON.', icon: '⚠️' },
                 { title: 'JSON Statistics',       desc: 'Shows key count, max depth, array lengths, and data type breakdown.', icon: '📊' },
                 { title: 'Undo / Redo',           desc: 'Full edit history with Ctrl+Z / Ctrl+Y keyboard shortcuts.', icon: '↩️' },
                 { title: 'Load from URL',         desc: 'Fetch JSON directly from any public API endpoint or URL.', icon: '🌐' },
