@@ -36,9 +36,7 @@ export function Footer() {
               <li><Link href="/formatters/html-beautifier" className="text-muted-foreground hover:text-foreground transition-colors">HTML Beautifier</Link></li>
               <li><Link href="/formatters/css-formatter" className="text-muted-foreground hover:text-foreground transition-colors">CSS Formatter</Link></li>
               <li><Link href="/formatters/javascript-formatter" className="text-muted-foreground hover:text-foreground transition-colors">JavaScript Formatter</Link></li>
-              <li><Link href="/formatters/sql-formatter" className="text-muted-foreground hover:text-foreground transition-colors">SQL Formatter</Link></li>
               <li><Link href="/formatters/xml-formatter" className="text-muted-foreground hover:text-foreground transition-colors">XML Formatter</Link></li>
-              <li><Link href="/formatters/markdown-formatter" className="text-muted-foreground hover:text-foreground transition-colors">Markdown Formatter</Link></li>
             </ul>
           </div>
           
@@ -49,8 +47,6 @@ export function Footer() {
               <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
               <li><Link href="/converters/jwt-decoder" className="text-muted-foreground hover:text-foreground transition-colors">JWT Decoder</Link></li>
               <li><Link href="/converters/text-to-binary" className="text-muted-foreground hover:text-foreground transition-colors">Text to Binary</Link></li>
-              <li><Link href="/converters/timezone-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timezone Converter</Link></li>
-              <li><Link href="/converters/date-difference-calculator" className="text-muted-foreground hover:text-foreground transition-colors">Date Difference Calculator</Link></li>
             </ul>
           </div>
 
@@ -60,7 +56,6 @@ export function Footer() {
               <li><Link href="/tools/word-counter" className="text-muted-foreground hover:text-foreground transition-colors">Word Counter</Link></li>
               <li><Link href="/tools/password-generator" className="text-muted-foreground hover:text-foreground transition-colors">Password Generator</Link></li>
               <li><Link href="/tools/hash-generator" className="text-muted-foreground hover:text-foreground transition-colors">Hash Generator</Link></li>
-              <li><Link href="/tools/uuid-generator" className="text-muted-foreground hover:text-foreground transition-colors">UUID Generator</Link></li>
               <li><Link href="/tools/meta-tag-generator" className="text-muted-foreground hover:text-foreground transition-colors">Meta Tag Generator</Link></li>
               <li><Link href="/tools/fake-user-data-generator" className="text-muted-foreground hover:text-foreground transition-colors">Fake User Data Generator</Link></li>
             </ul>

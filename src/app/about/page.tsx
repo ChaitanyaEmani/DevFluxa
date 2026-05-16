@@ -84,9 +84,7 @@ export default function AboutPage() {
                 <li>• HTML Beautifier</li>
                 <li>• CSS Formatter</li>
                 <li>• JavaScript Formatter</li>
-                <li>• SQL Formatter</li>
                 <li>• XML Formatter</li>
-                <li>• Markdown Formatter</li>
               </ul>
             </div>
             <div>
@@ -96,9 +94,6 @@ export default function AboutPage() {
                 <li>• RGB to HEX Converter</li>
                 <li>• JWT Decoder</li>
                 <li>• Text to Binary Converter</li>
-                <li>• Binary to Text Converter</li>
-                <li>• Timezone Converter</li>
-                <li>• Date Difference Calculator</li>
               </ul>
             </div>
             <div>
@@ -107,10 +102,8 @@ export default function AboutPage() {
                 <li>• Word Counter</li>
                 <li>• Password Generator</li>
                 <li>• Hash Generator</li>
-                <li>• UUID Generator</li>
                 <li>• Meta Tag Generator</li>
                 <li>• Fake User Data Generator</li>
-                <li>• Cron Expression Generator</li>
               </ul>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { getToolsByCategory } from '@/config/tools'
 export const metadata = generateMetadata({
   title: 'Formatters - Free Online Code Formatting Tools',
   description: 'Format and beautify your code with our collection of professional formatters. JSON, SQL, HTML, XML, CSS and more.',
-  keywords: ['code formatter', 'JSON formatter', 'SQL formatter', 'HTML beautifier', 'XML formatter', 'CSS formatter', 'online formatter']
+  keywords: ['code formatter', 'JSON formatter', 'HTML beautifier', 'XML formatter', 'CSS formatter', 'online formatter']
 })
 
 export default function FormattersPage() {

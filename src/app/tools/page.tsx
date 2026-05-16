@@ -38,22 +38,10 @@ const tools = [
         features: ['Syntax Highlighting', 'Indentation Control', 'Code Minification', 'Error Detection']
       },
       {
-        name: 'SQL Formatter',
-        description: 'Format SQL queries with proper indentation and structure',
-        href: '/formatters/sql-formatter',
-        features: ['Keyword Formatting', 'Query Structure', 'Comment Removal', 'Code Minification']
-      },
-      {
         name: 'XML Formatter',
         description: 'Format and validate XML documents with proper indentation',
         href: '/formatters/xml-formatter',
         features: ['XML Validation', 'Pretty Printing', 'Attribute Formatting', 'CDATA Support']
-      },
-      {
-        name: 'Markdown Formatter',
-        description: 'Format and beautify Markdown text with proper structure',
-        href: '/formatters/markdown-formatter',
-        features: ['Line Wrapping', 'List Formatting', 'Header Spacing', 'Blockquote Support']
       }
     ]
   },
@@ -85,18 +73,6 @@ const tools = [
         description: 'Convert text to binary code and vice versa',
         href: '/converters/text-to-binary',
         features: ['Bidirectional', 'Custom Separators', 'Real-time Conversion', 'Error Detection']
-      },
-      {
-        name: 'Timezone Converter',
-        description: 'Convert time between different timezones instantly',
-        href: '/converters/timezone-converter',
-        features: ['Real-time Updates', 'Multiple Timezones', 'Custom Time Input', 'Copy Results']
-      },
-      {
-        name: 'Date Difference Calculator',
-        description: 'Calculate the difference between two dates in various units',
-        href: '/converters/date-difference-calculator',
-        features: ['Multiple Units', 'Detailed Breakdown', 'Quick Actions', 'Precise Calculation']
       }
     ]
   },
@@ -122,12 +98,6 @@ const tools = [
         description: 'Generate MD5, SHA1, SHA256 hashes of your text',
         href: '/tools/hash-generator',
         features: ['Multiple Algorithms', 'Instant Hashing', 'Copy Results', 'Text Input']
-      },
-      {
-        name: 'UUID Generator',
-        description: 'Generate unique UUIDs in v1 and v4 formats',
-        href: '/tools/uuid-generator',
-        features: ['UUID v4 Support', 'UUID v1 Support', 'Bulk Generation', 'Copy Functions']
       },
       {
         name: 'Meta Tag Generator',
