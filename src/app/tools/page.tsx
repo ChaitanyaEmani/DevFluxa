@@ -16,31 +16,31 @@ const tools = [
       {
         name: 'JSON Formatter',
         description: 'Format, validate, and minify JSON data with proper indentation',
-        href: '/formatters/json-formatter',
+        href: '/tools/json-formatter',
         features: ['Syntax Validation', 'Error Detection', 'Pretty Print', 'Minify Option']
       },
       {
         name: 'HTML Beautifier',
         description: 'Format HTML code with proper indentation and structure',
-        href: '/formatters/html-beautifier',
+        href: '/tools/html-beautifier',
         features: ['Tag Validation', 'Proper Nesting', 'Comment Handling', 'Structure Preservation']
       },
       {
         name: 'CSS Formatter',
         description: 'Format CSS with consistent indentation and property organization',
-        href: '/formatters/css-formatter',
+        href: '/tools/css-formatter',
         features: ['Selector Formatting', 'Property Alignment', 'Brace Formatting', 'Validation']
       },
       {
         name: 'JavaScript Formatter',
         description: 'Format and beautify JavaScript code with proper indentation',
-        href: '/formatters/javascript-formatter',
+        href: '/tools/javascript-formatter',
         features: ['Syntax Highlighting', 'Indentation Control', 'Code Minification', 'Error Detection']
       },
       {
         name: 'XML Formatter',
         description: 'Format and validate XML documents with proper indentation',
-        href: '/formatters/xml-formatter',
+        href: '/tools/xml-formatter',
         features: ['XML Validation', 'Pretty Printing', 'Attribute Formatting', 'CDATA Support']
       }
     ]
@@ -53,25 +53,25 @@ const tools = [
       {
         name: 'Timestamp Converter',
         description: 'Convert between Unix timestamps and human-readable dates',
-        href: '/converters/timestamp-converter',
+        href: '/tools/timestamp-converter',
         features: ['Real-time Updates', 'Multiple Formats', 'Range Validation', 'Current Time']
       },
       {
         name: 'RGB to HEX Converter',
         description: 'Convert RGB colors to HEX format with live preview',
-        href: '/converters/rgb-to-hex',
+        href: '/tools/rgbtohex-converter',
         features: ['Live Preview', 'Color Validation', 'Bidirectional', '3/6-digit Support']
       },
       {
         name: 'JWT Decoder',
         description: 'Decode JSON Web Tokens with header and payload analysis',
-        href: '/converters/jwt-decoder',
+        href: '/tools/jwt-decoder',
         features: ['Token Validation', 'Header Display', 'Payload Analysis', 'Expiration Check']
       },
       {
         name: 'Text to Binary',
         description: 'Convert text to binary code and vice versa',
-        href: '/converters/text-to-binary',
+        href: '/tools/text-to-binary',
         features: ['Bidirectional', 'Custom Separators', 'Real-time Conversion', 'Error Detection']
       }
     ]

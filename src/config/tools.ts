@@ -20,7 +20,7 @@ export const tools: Tool[] = [
     icon: 'Braces',
     color: 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300',
     tag: 'Most Popular',
-    path: '/formatters/json-formatter',
+    path: '/tools/json-formatter',
     popular: true
   },
   {
@@ -31,7 +31,7 @@ export const tools: Tool[] = [
     icon: 'Code2',
     color: 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300',
     tag: 'Web Dev',
-    path: '/formatters/html-beautifier'
+    path: '/tools/html-beautifier'
   },
   {
     id: 'css-formatter',
@@ -41,7 +41,7 @@ export const tools: Tool[] = [
     icon: 'Palette',
     color: 'bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-300',
     tag: 'Styling',
-    path: '/formatters/css-formatter'
+    path: '/tools/css-formatter'
   },
   {
     id: 'javascript-formatter',
@@ -51,7 +51,7 @@ export const tools: Tool[] = [
     icon: 'Code',
     color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300',
     tag: 'Popular',
-    path: '/formatters/javascript-formatter',
+    path: '/tools/javascript-formatter',
     popular: true
   },
   {
@@ -62,7 +62,7 @@ export const tools: Tool[] = [
     icon: 'FileCode',
     color: 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300',
     tag: 'Data',
-    path: '/formatters/xml-formatter'
+    path: '/tools/xml-formatter'
   },
   {
     id: 'timestamp-converter',
@@ -72,7 +72,7 @@ export const tools: Tool[] = [
     icon: 'Clock',
     color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300',
     tag: 'Time Utility',
-    path: '/converters/timestamp-converter'
+    path: '/tools/timestamp-converter'
   },
   {
     id: 'rgb-to-hex',
@@ -82,7 +82,7 @@ export const tools: Tool[] = [
     icon: 'Droplet',
     color: 'bg-teal-100 text-teal-600 dark:bg-teal-900 dark:text-teal-300',
     tag: 'Design',
-    path: '/converters/rgb-to-hex'
+    path: '/tools/rgbtohex-converter'
   },
   {
     id: 'jwt-decoder',
@@ -92,7 +92,7 @@ export const tools: Tool[] = [
     icon: 'Shield',
     color: 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300',
     tag: 'Security',
-    path: '/converters/jwt-decoder',
+    path: '/tools/jwt-decoder',
     popular: true
   },
   {
@@ -103,7 +103,7 @@ export const tools: Tool[] = [
     icon: 'Binary',
     color: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300',
     tag: 'Encoding',
-    path: '/converters/text-to-binary'
+    path: '/tools/text-to-binary'
   },
   {
     id: 'word-counter',

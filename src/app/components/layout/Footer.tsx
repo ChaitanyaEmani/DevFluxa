@@ -32,21 +32,21 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Formatters</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/formatters/json-formatter" className="text-muted-foreground hover:text-foreground transition-colors">JSON Formatter</Link></li>
-              <li><Link href="/formatters/html-beautifier" className="text-muted-foreground hover:text-foreground transition-colors">HTML Beautifier</Link></li>
-              <li><Link href="/formatters/css-formatter" className="text-muted-foreground hover:text-foreground transition-colors">CSS Formatter</Link></li>
-              <li><Link href="/formatters/javascript-formatter" className="text-muted-foreground hover:text-foreground transition-colors">JavaScript Formatter</Link></li>
-              <li><Link href="/formatters/xml-formatter" className="text-muted-foreground hover:text-foreground transition-colors">XML Formatter</Link></li>
+              <li><Link href="/tools/json-formatter" className="text-muted-foreground hover:text-foreground transition-colors">JSON Formatter</Link></li>
+              <li><Link href="/tools/html-beautifier" className="text-muted-foreground hover:text-foreground transition-colors">HTML Beautifier</Link></li>
+              <li><Link href="/tools/css-formatter" className="text-muted-foreground hover:text-foreground transition-colors">CSS Formatter</Link></li>
+              <li><Link href="/tools/javascript-formatter" className="text-muted-foreground hover:text-foreground transition-colors">JavaScript Formatter</Link></li>
+              <li><Link href="/tools/xml-formatter" className="text-muted-foreground hover:text-foreground transition-colors">XML Formatter</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="font-semibold mb-4">Converters</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/converters/timestamp-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timestamp Converter</Link></li>
-              <li><Link href="/converters/rgb-to-hex" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
-              <li><Link href="/converters/jwt-decoder" className="text-muted-foreground hover:text-foreground transition-colors">JWT Decoder</Link></li>
-              <li><Link href="/converters/text-to-binary" className="text-muted-foreground hover:text-foreground transition-colors">Text to Binary</Link></li>
+              <li><Link href="/tools/timestamp-converter" className="text-muted-foreground hover:text-foreground transition-colors">Timestamp Converter</Link></li>
+              <li><Link href="/tools/rgbtohex-converter" className="text-muted-foreground hover:text-foreground transition-colors">RGB to HEX</Link></li>
+              <li><Link href="/tools/jwt-decoder" className="text-muted-foreground hover:text-foreground transition-colors">JWT Decoder</Link></li>
+              <li><Link href="/tools/text-to-binary" className="text-muted-foreground hover:text-foreground transition-colors">Text to Binary</Link></li>
             </ul>
           </div>
 
