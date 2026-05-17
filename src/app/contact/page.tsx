@@ -1,7 +1,7 @@
 import { generateMetadata } from '@/lib/generateMetadata'
 import { Mail, MessageSquare } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-import { ContactForm } from '@/components/ContactForm'
+import { Button } from '@/app/components/ui/Button'
+import { ContactForm } from '@/app/components/ContactForm'
 
 export const metadata = generateMetadata({
   title: 'Contact Devfluxa - Get in Touch',

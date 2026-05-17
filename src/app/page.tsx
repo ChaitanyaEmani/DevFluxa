@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Star, Zap, Shield, Code } from 'lucide-react'
-import { ToolCard } from '@/components/ui/ToolCard'
+import { ToolCard } from '@/app/components/ui/ToolCard'
 import { tools, getPopularTools } from '@/config/tools'
 
 export default function Home() {

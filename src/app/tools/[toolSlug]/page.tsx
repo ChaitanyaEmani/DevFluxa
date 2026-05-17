@@ -10,13 +10,20 @@ interface ToolPageProps {
 
 export async function generateStaticParams() {
   return [
+    {toolSlug: 'json-formatter'},
+    {toolSlug: 'css-formatter'},
+    {toolSlug: 'html-beautifier'}, 
+    {toolSlug: 'xml-formatter'},
+    {toolSlug: 'javascript-formatter'},
+    {toolSlug: 'timestamp-converter'},
+    {toolSlug: 'rgbtohex-converter'},
+    {toolSlug: 'jwt-decoder'},
+    {toolSlug: 'text-to-binary'},
     { toolSlug: 'word-counter' },
     { toolSlug: 'password-generator' },
     { toolSlug: 'hash-generator' },
-    { toolSlug: 'uuid-generator' },
     { toolSlug: 'meta-tag-generator' },
     { toolSlug: 'fake-user-data-generator' },
-    { toolSlug: 'cron-expression-generator' },
     { toolSlug: 'javascript-validator' }
   ]
 }
@@ -51,26 +58,50 @@ export default async function ToolPage({ params }: ToolPageProps) {
   let ToolComponent
   try {
     switch (toolSlug) {
+      case 'json-formatter':
+        ToolComponent = (await import('@/app/components/formatters/JsonFormatter')).JsonFormatter
+        break
+      case 'css-formatter':
+        ToolComponent = (await import('@/app/components/formatters/CssFormatter')).CssFormatter
+        break
+      case 'html-beautifier':
+        ToolComponent = (await import('@/app/components/formatters/HtmlBeautifier')).HtmlBeautifier
+        break
+      case 'xml-formatter':
+        ToolComponent = (await import('@/app/components/formatters/XmlFormatter')).XmlFormatter
+        break
+      case 'javascript-formatter':
+        ToolComponent = (await import('@/app/components/formatters/JavaScriptFormatter')).JavaScriptFormatter
+        break
+      case 'timestamp-converter':
+        ToolComponent = (await import('@/app/components/converters/TimestampConverter')).TimestampConverter
+        break
+      case 'rgbtohex-converter':
+        ToolComponent = (await import('@/app/components/converters/RgbToHex')).RgbToHex
+        break
+      case 'jwt-decoder':
+        ToolComponent = (await import('@/app/components/converters/JwtDecoder')).JwtDecoder
+        break
+      case 'text-to-binary':
+        ToolComponent = (await import('@/app/components/converters/TextToBinary')).TextToBinary
+        break
       case 'word-counter':
-        ToolComponent = (await import('@/components/tools/other/WordCounter')).WordCounter
+        ToolComponent = (await import('@/app/components/generators/WordCounter')).WordCounter
         break
       case 'password-generator':
-        ToolComponent = (await import('@/components/tools/other/PasswordGenerator')).PasswordGenerator
+        ToolComponent = (await import('@/app/components/generators/PasswordGenerator')).PasswordGenerator
         break
       case 'hash-generator':
-        ToolComponent = (await import('@/components/tools/other/HashGenerator')).HashGenerator
-        break
-      case 'uuid-generator':
-        ToolComponent = (await import('@/components/tools/other/UuidGenerator')).UuidGenerator
+        ToolComponent = (await import('@/app/components/generators/HashGenerator')).HashGenerator
         break
       case 'meta-tag-generator':
-        ToolComponent = (await import('@/components/tools/other/MetaTagGenerator')).MetaTagGenerator
+        ToolComponent = (await import('@/app/components/generators/MetaTagGenerator')).MetaTagGenerator
         break
       case 'fake-user-data-generator':
-        ToolComponent = (await import('@/components/tools/other/FakeUserDataGenerator')).FakeUserDataGenerator
+        ToolComponent = (await import('@/app/components/generators/FakeUserDataGenerator')).FakeUserDataGenerator
         break
       case 'javascript-validator':
-        ToolComponent = (await import('@/components/tools/validators/JavaScriptValidator')).JavaScriptValidator
+        ToolComponent = (await import('@/app/components/validators/JavaScriptValidator')).JavaScriptValidator
         break
       default:
         notFound()
